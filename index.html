@@ -20,7 +20,7 @@
     .btn-out { background-color: #d93025; }
     .btn-leave { background-color: #f9ab00; color: black; }
     .btn-back { background-color: #188038; }
-    .btn-ot { background-color: #6f42c1; } /* 紫色加班按鈕 */
+    .btn-ot { background-color: #6f42c1; color: white; }
     .btn-edit { background-color: #6c757d; font-size: 12px; padding: 5px 10px; width: auto; margin-left: 10px; }
     
     #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
@@ -33,12 +33,9 @@
     .error { background: #f8d7da; color: #721c24; }
     .loading { background: #cce5ff; color: #004085; }
 
-    /* 四個分頁標籤 */
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
-    
-    /* 歷史紀錄列表 */
     .history-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -59,7 +56,6 @@
   </div>
 
   <div id="main-section" class="hidden">
-    
     <div id="user-info">
       <img id="u-photo" src="" alt="">
       <div class="user-details">
@@ -69,7 +65,9 @@
       <button class="btn-edit" onclick="toggleEditMode()">修改資料</button>
     </div>
 
-    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px;">
+    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px; border:1px solid #eee; border-radius:8px;">
+        <label>員工姓名 (資料庫同步用)</label><input type="text" id="dbName" placeholder="請輸入真實姓名">
+        <label>職稱</label><input type="text" id="jobTitle" placeholder="例如：技術員">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
         <button class="btn-in" onclick="saveProfile()">儲存並同步</button>
@@ -87,10 +85,10 @@
            📍 GPS 距離：<span id="dist-display" style="color:blue;">偵測中...</span>
         </p>
         <div class="btn-grid">
-            <button class="btn-in" onclick="doClock('上班')">上班打卡<br><span style="font-size:12px;">(08:00前)</span></button>
-            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><span style="font-size:12px;">(紀錄時間)</span></button>
-            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><span style="font-size:12px;">(紀錄時間)</span></button>
-            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><span style="font-size:12px;">(16:30後)</span></button>
+            <button class="btn-in" onclick="doClock('上班')">上班打卡<br><small>(08:00前)</small></button>
+            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><small>(紀錄時間)</small></button>
+            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><small>(紀錄時間)</small></button>
+            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>(16:30後)</small></button>
         </div>
     </div>
 
@@ -99,30 +97,22 @@
         <input type="date" id="onboardDate" disabled style="background:#e9ecef;">
         <p>特休天數：<span id="leaveRes" style="color:blue; font-weight:bold;">0</span> 天</p>
         <hr>
-        <label>假別</label>
-        <select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
-        <label>開始</label><input type="datetime-local" id="l-start">
-        <label>結束</label><input type="datetime-local" id="l-end">
+        <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
+        <label>開始</label><input type="datetime-local" id="l-start" step="1800">
+        <label>結束</label><input type="datetime-local" id="l-end" step="1800">
         <button class="btn-back" onclick="submitLeave()">送出假單</button>
     </div>
 
     <div id="tab-overtime" class="hidden">
-        <label>加班補償方式</label>
-        <select id="otType">
-            <option value="申請加班費">申請加班費 (待遇)</option>
-            <option value="申請補休">申請補休</option>
-        </select>
-        <label>開始時間</label><input type="datetime-local" id="ot-start">
-        <label>結束時間</label><input type="datetime-local" id="ot-end">
+        <label>方式</label><select id="otType"><option value="申請加班費">申請加班費</option><option value="申請補休">申請補休</option></select>
+        <label>開始</label><input type="datetime-local" id="ot-start" step="1800">
+        <label>結束</label><input type="datetime-local" id="ot-end" step="1800">
         <button class="btn-ot" onclick="submitOvertime()">送出加班申請</button>
     </div>
 
     <div id="tab-history" class="hidden">
-        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理紀錄</button>
-        <label>最近 5 筆打卡</label>
-        <div id="history-list" style="background:#fafafa; border:1px solid #eee; border-radius:5px; padding:5px;">
-            <p style="text-align:center; color:#999;">載入中...</p>
-        </div>
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理</button>
+        <div id="history-list" style="background:#fafafa; padding:5px;"></div>
     </div>
 
     <div id="status-box"></div>
@@ -130,7 +120,7 @@
 </div>
 
 <script>
-  // ★★★ 務必確認這是最新的 /exec 網址 ★★★
+  // ★★★ 請換成最新的 /exec 網址 ★★★
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
@@ -138,19 +128,35 @@
   
   let currentUserToken = null;
   let currentLat = 0, currentLng = 0, currentDist = 9999;
-  let userEmail = "";
+
+  // 初始化：設定預設時間為 今日 08:00 與 16:30
+  function setDefaultTimes() {
+    const now = new Date();
+    // 轉為 YYYY-MM-DD 格式
+    const ymd = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+    
+    // 設定所有 datetime-local 的預設值
+    const startVal = ymd + "T08:00";
+    const endVal = ymd + "T16:30";
+
+    document.getElementById('l-start').value = startVal;
+    document.getElementById('l-end').value = endVal;
+    document.getElementById('ot-start').value = startVal;
+    document.getElementById('ot-end').value = endVal;
+  }
 
   function handleCredentialResponse(response) {
     try {
       const payload = parseJwt(response.credential);
       currentUserToken = response.credential;
-      userEmail = payload.email; // 記住 Email 供查詢用
       
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
-      document.getElementById('u-name').innerText = payload.name;
+      
+      // 顯示 Google 照片，但名字等待資料庫讀取
       document.getElementById('u-photo').src = payload.picture;
       
+      setDefaultTimes(); // 設定預設時間
       fetchProfile();
       startGPS();
     } catch (e) { alert("登入錯誤：" + e); }
@@ -166,60 +172,93 @@
     .then(data => {
       updateStatus("", "");
       if(data.found) {
+        // 顯示資料庫中的姓名
+        document.getElementById('u-name').innerText = data.name || "未設定姓名";
+        document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
+        
+        // 填入修改表單
+        document.getElementById('dbName').value = data.name;
+        document.getElementById('jobTitle').value = data.jobTitle;
         document.getElementById('company').value = data.company;
         document.getElementById('dept').value = data.dept;
-        document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
+        
         if(data.onboardDate) {
            document.getElementById('onboardDate').value = data.onboardDate;
            calcLeave(data.onboardDate);
         }
       } else {
-        document.getElementById('u-company-display').innerText = "新員工 (請點擊修改資料)";
+        document.getElementById('u-name').innerText = "新員工";
+        document.getElementById('u-company-display').innerText = "請點擊修改資料";
         document.getElementById('meta-form').classList.remove('hidden');
       }
     });
   }
 
   function saveProfile() {
+    const name = document.getElementById('dbName').value;
+    const title = document.getElementById('jobTitle').value;
     const company = document.getElementById('company').value;
     const dept = document.getElementById('dept').value;
+    
+    if(!name) { alert("請輸入員工姓名"); return; }
+
     updateStatus("儲存中...", "loading");
     fetch(GAS_URL, { 
       method: "POST", 
-      body: JSON.stringify({ action: "updateProfile", credential: currentUserToken, company: company, dept: dept }) 
+      body: JSON.stringify({ 
+        action: "updateProfile", 
+        credential: currentUserToken, 
+        name: name,
+        jobTitle: title,
+        company: company, 
+        dept: dept 
+      }) 
     })
     .then(r => r.json())
     .then(res => {
       updateStatus(res.message, "success");
+      // 更新介面
+      document.getElementById('u-name').innerText = name;
       document.getElementById('u-company-display').innerText = company + " / " + dept;
       document.getElementById('meta-form').classList.add('hidden');
     });
   }
 
-  // 加班申請
+  function doClock(type) {
+    const company = document.getElementById('company').value;
+    if(!company) { alert("請先設定資料"); return; }
+    if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
+
+    updateStatus("打卡中...", "loading");
+    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: company, dept: document.getElementById('dept').value, lat: currentLat, lng: currentLng });
+  }
+
+  function submitLeave() {
+    updateStatus("傳送假單...", "loading");
+    sendToGAS({ 
+        action: "requestLeave", 
+        credential: currentUserToken, 
+        company: document.getElementById('company').value, 
+        dept: document.getElementById('dept').value, 
+        type: document.getElementById('leaveType').value, 
+        startDate: document.getElementById('l-start').value, 
+        endDate: document.getElementById('l-end').value 
+    });
+  }
+  
   function submitOvertime() {
-    const type = document.getElementById('otType').value;
-    const start = document.getElementById('ot-start').value;
-    const end = document.getElementById('ot-end').value;
-    if(!start || !end) { alert("請選擇時間"); return; }
-    
-    updateStatus("傳送加班申請...", "loading");
+    updateStatus("傳送加班...", "loading");
     sendToGAS({ 
         action: "requestOvertime", 
         credential: currentUserToken, 
-        overtimeType: type, 
-        startDate: start, 
-        endDate: end,
-        company: document.getElementById('company').value,
-        dept: document.getElementById('dept').value
+        overtimeType: document.getElementById('otType').value, 
+        startDate: document.getElementById('ot-start').value, 
+        endDate: document.getElementById('ot-end').value 
     });
   }
 
-  // 查詢紀錄
   function loadHistory() {
-    const list = document.getElementById('history-list');
-    list.innerHTML = "<p style='text-align:center'>重新載入中...</p>";
-    
+    document.getElementById('history-list').innerHTML = "載入中...";
     fetch(GAS_URL, { 
       method: "POST", 
       body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) 
@@ -230,45 +269,17 @@
         if(data.clock && data.clock.length > 0) {
             data.clock.forEach(item => {
                 let color = item.status === "正常" ? "green" : "red";
-                html += `<div class="history-item">
-                            <span>${item.type} <small style="color:#999">${item.time}</small></span>
-                            <span style="color:${color}">${item.status}</span>
-                         </div>`;
+                html += `<div class="history-item"><span>${item.type} <small>${item.time}</small></span><span style="color:${color}">${item.status}</span></div>`;
             });
-        } else {
-            html = "<p style='text-align:center; padding:10px;'>尚無打卡紀錄</p>";
-        }
-        list.innerHTML = html;
+        } else { html = "<p style='text-align:center'>無紀錄</p>"; }
+        document.getElementById('history-list').innerHTML = html;
     });
   }
 
   function calcLeave(dateStr) {
-     if(!dateStr) return;
-     // ★ 關鍵修正：確保日期格式正確，避免 undefined
      fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: dateStr }) })
      .then(r => r.json())
-     .then(d => {
-         // 強制轉換為數字顯示
-         let days = d.days !== undefined ? d.days : 0;
-         document.getElementById('leaveRes').innerText = days;
-     });
-  }
-
-  function doClock(type) {
-    const company = document.getElementById('company').value;
-    const dept = document.getElementById('dept').value;
-    if(!company) { alert("請先設定資料"); return; }
-    if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)，無法打卡！`); return; }
-
-    updateStatus("打卡中...", "loading");
-    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: company, dept: dept, lat: currentLat, lng: currentLng });
-  }
-
-  function submitLeave() {
-    const company = document.getElementById('company').value;
-    const dept = document.getElementById('dept').value;
-    updateStatus("傳送假單...", "loading");
-    sendToGAS({ action: "requestLeave", credential: currentUserToken, company: company, dept: dept, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value });
+     .then(d => document.getElementById('leaveRes').innerText = d.days || 0);
   }
 
   function sendToGAS(data) {
@@ -283,7 +294,7 @@
     box.innerText = msg;
     box.className = type;
   }
-
+  
   function parseJwt (token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -300,22 +311,14 @@
             currentLng = pos.coords.longitude;
             currentDist = getDist(currentLat, currentLng, TARGET_LAT, TARGET_LNG);
             document.getElementById('dist-display').innerText = Math.round(currentDist);
-        }, (err) => {}, { enableHighAccuracy: true });
+        }, null, { enableHighAccuracy: true });
     }
   }
 
   function switchTab(t) {
-    ['clock', 'leave', 'overtime', 'history'].forEach(id => {
-        document.getElementById('tab-'+id).classList.add('hidden');
-    });
+    ['clock', 'leave', 'overtime', 'history'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
     document.getElementById('tab-'+t).classList.remove('hidden');
-    
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-    // 簡單的 active 樣式切換邏輯
-    const index = ['clock', 'leave', 'overtime', 'history'].indexOf(t);
-    document.querySelectorAll('.tab')[index].classList.add('active');
-    
-    if(t === 'history') loadHistory(); // 切換到歷史紀錄時自動載入
+    if(t === 'history') loadHistory();
   }
 
   function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
