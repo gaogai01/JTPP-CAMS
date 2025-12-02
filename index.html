@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+    .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; }
+    input, select, button { width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+    button { background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+    button:hover { background-color: #0056b3; }
+    .btn-red { background-color: #dc3545; }
+    .hidden { display: none; }
+    #status { margin-top: 10px; color: green; text-align: center; font-weight: bold; }
+    .tab { display: flex; margin-bottom: 15px; }
+    .tab button { flex: 1; margin: 0 5px; background: #ddd; color: black; }
+    .tab button.active { background: #007bff; color: white; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>承包商管理系統</h2>
+
+  <div class="tab">
+    <button onclick="showSection('clockInSec')" class="active">打卡</button>
+    <button onclick="showSection('leaveSec')">請假</button>
+  </div>
+
+  <label>姓名：</label>
+  <input type="text" id="username" placeholder="請輸入姓名">
+
+  <div id="clockInSec">
+    <button onclick="getLocation('上班')">上班打卡 (GPS)</button>
+    <button onclick="getLocation('下班')" class="btn-red">下班打卡 (GPS)</button>
+  </div>
+
+  <div id="leaveSec" class="hidden">
+    <h3>特休試算</h3>
+    <label>到職日期：</label>
+    <input type="date" id="startDate" onchange="checkLeaveDays()">
+    <p>預估特休天數：<span id="leaveResult" style="color:blue; font-weight:bold;">0</span> 天</p>
+    <hr>
+    <h3>請假申請</h3>
+    <label>假別：</label>
+    <select id="leaveType">
+      <option value="特休">特休</option>
+      <option value="事假">事假</option>
+      <option value="病假">病假</option>
+    </select>
+    <label>開始日期：</label>
+    <input type="date" id="leaveStart">
+    <label>結束日期：</label>
+    <input type="date" id="leaveEnd">
+    <button onclick="submitLeave()">送出假單</button>
+    <p style="font-size:12px; color:gray;">*送出後需經：代理人>領班>老闆>甲方 核准</p>
+  </div>
+
+  <div id="status"></div>
+</div>
+
+<script>
+  // 切換顯示區域
+  function showSection(id) {
+    document.getElementById('clockInSec').classList.add('hidden');
+    document.getElementById('leaveSec').classList.add('hidden');
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  // 1. 打卡功能：取得 GPS
+  function getLocation(type) {
+    var name = document.getElementById('username').value;
+    if(!name) { alert("請先輸入姓名！"); return; }
+    
+    document.getElementById('status').innerText = "定位中...";
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var data = {
+          name: name,
+          type: type,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        // 呼叫後端
+        google.script.run.withSuccessHandler(onSuccess).handleClockIn(data);
+      }, function(error) {
+        document.getElementById('status').innerText = "定位失敗，請確認已開啟 GPS。";
+      });
+    } else {
+      document.getElementById('status').innerText = "您的瀏覽器不支援定位功能。";
+    }
+  }
+
+  // 2. 特休試算
+  function checkLeaveDays() {
+    var dateStr = document.getElementById('startDate').value;
+    if(dateStr) {
+      google.script.run.withSuccessHandler(function(days){
+        document.getElementById('leaveResult').innerText = days;
+      }).calculateLeaveDays(dateStr);
+    }
+  }
+
+  // 3. 送出假單
+  function submitLeave() {
+    var name = document.getElementById('username').value;
+    var type = document.getElementById('leaveType').value;
+    var start = document.getElementById('leaveStart').value;
+    var end = document.getElementById('leaveEnd').value;
+
+    if(!name || !start || !end) { alert("請填寫完整資訊"); return; }
+
+    var data = {
+      name: name,
+      type: type,
+      startDate: start,
+      endDate: end
+    };
+    
+    document.getElementById('status').innerText = "傳送中...";
+    google.script.run.withSuccessHandler(onSuccess).handleLeaveRequest(data);
+  }
+
+  function onSuccess(msg) {
+    document.getElementById('status').innerText = msg;
+    // alert(msg);
+  }
+</script>
+
+</body>
+</html>
