@@ -9,13 +9,10 @@
     .container { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
     .hidden { display: none !important; }
-    
     input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; margin-top: 10px; }
-    
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; }
-    
     .btn-in { background-color: #1a73e8; } 
     .btn-out { background-color: #d93025; }
     .btn-leave { background-color: #f9ab00; color: black; }
@@ -36,15 +33,8 @@
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
-    
-    /* 歷史紀錄樣式 */
-    .history-group { margin-bottom: 15px; }
-    .history-title { font-size: 12px; color: #666; font-weight: bold; margin-bottom: 5px; border-left: 3px solid #1a73e8; padding-left: 5px; }
-    .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-    .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; background: #eee; color: #555; }
-    .status-ok { background: #d4edda; color: #155724; }
-    .status-wait { background: #fff3cd; color: #856404; }
-    .status-no { background: #f8d7da; color: #721c24; }
+    .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
+    .leave-stats { display: flex; justify-content: space-between; background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 13px; }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -52,14 +42,12 @@
 
 <div class="container">
   <h2>⚡ 尖山電廠系統</h2>
-
   <div id="login-section">
     <p style="text-align:center; color:#666;">請使用 Google 帳號登入</p>
     <div id="g_id_onload"
          data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com"
          data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
+         data-auto_prompt="false"></div>
     <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"></div>
   </div>
 
@@ -74,7 +62,7 @@
     </div>
 
     <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px; border:1px solid #eee; border-radius:8px;">
-        <label>員工姓名 (資料庫同步)</label><input type="text" id="dbName">
+        <label>員工姓名</label><input type="text" id="dbName">
         <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
@@ -85,7 +73,7 @@
       <div class="tab active" onclick="switchTab('clock')">打卡</div>
       <div class="tab" onclick="switchTab('leave')">請假</div>
       <div class="tab" onclick="switchTab('overtime')">加班</div>
-      <div class="tab" onclick="switchTab('history')">進度查詢</div>
+      <div class="tab" onclick="switchTab('history')">查詢</div>
     </div>
 
     <div id="tab-clock">
@@ -101,11 +89,14 @@
     </div>
 
     <div id="tab-leave" class="hidden">
-        <label>到職日</label>
-        <input type="date" id="onboardDate" disabled style="background:#e9ecef;">
-        <p>特休天數：<span id="leaveRes" style="color:blue; font-weight:bold;">0</span> 天</p>
-        <hr>
+        <div class="leave-stats">
+            <span>總特休: <b id="l-total">0</b> 天</span>
+            <span>已休: <b id="l-used">0</b> 天</span>
+            <span style="color:red">剩餘: <b id="l-left">0</b> 天</span>
+        </div>
         <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
+        <label>職務代理人姓名</label><input type="text" id="agentName" placeholder="請輸入代理人姓名">
+        
         <label>開始</label><input type="datetime-local" id="l-start" step="1800">
         <label>結束</label><input type="datetime-local" id="l-end" step="1800">
         <button class="btn-back" onclick="submitLeave()">送出假單</button>
@@ -119,7 +110,7 @@
     </div>
 
     <div id="tab-history" class="hidden">
-        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理進度</button>
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理</button>
         <div id="history-list" style="background:#fff;"></div>
     </div>
 
@@ -128,7 +119,7 @@
 </div>
 
 <script>
-  // ★★★ 務必換成你的 /exec 網址 ★★★
+  // ★★★ 換成你的 /exec 網址 ★★★
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
@@ -162,28 +153,25 @@
   function fetchProfile() {
     updateStatus("讀取資料中...", "loading");
     fetch(GAS_URL, { 
-      method: "POST", 
-      body: JSON.stringify({ action: "getProfile", credential: currentUserToken }) 
+      method: "POST", body: JSON.stringify({ action: "getProfile", credential: currentUserToken }) 
     })
     .then(r => r.json())
     .then(data => {
       updateStatus("", "");
       if(data.found) {
-        document.getElementById('u-name').innerText = data.name || "未設定姓名";
+        document.getElementById('u-name').innerText = data.name;
         document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
-        
         document.getElementById('dbName').value = data.name;
         document.getElementById('jobTitle').value = data.jobTitle;
         document.getElementById('company').value = data.company;
         document.getElementById('dept').value = data.dept;
         
-        if(data.onboardDate) {
-           document.getElementById('onboardDate').value = data.onboardDate;
-           calcLeave(data.onboardDate);
-        }
+        // 顯示特休統計
+        document.getElementById('l-total').innerText = data.leaveTotal;
+        document.getElementById('l-used').innerText = data.leaveUsed;
+        document.getElementById('l-left').innerText = data.leaveLeft;
       } else {
         document.getElementById('u-name').innerText = "新員工";
-        document.getElementById('u-company-display').innerText = "請修改資料";
         document.getElementById('meta-form').classList.remove('hidden');
       }
     });
@@ -204,8 +192,7 @@
     .then(r => r.json())
     .then(res => {
       updateStatus(res.message, "success");
-      document.getElementById('u-name').innerText = name;
-      document.getElementById('u-company-display').innerText = document.getElementById('company').value + " / " + document.getElementById('dept').value;
+      fetchProfile(); // 重新讀取以更新特休顯示
       document.getElementById('meta-form').classList.add('hidden');
     });
   }
@@ -218,68 +205,57 @@
   }
 
   function submitLeave() {
+    // 檢查代理人
+    const agent = document.getElementById('agentName').value;
+    if(!agent) { alert("請輸入代理人姓名"); return; }
+    
     updateStatus("傳送假單...", "loading");
-    sendToGAS({ action: "requestLeave", credential: currentUserToken, company: document.getElementById('company').value, dept: document.getElementById('dept').value, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value });
+    sendToGAS({ 
+        action: "requestLeave", 
+        credential: currentUserToken, 
+        company: document.getElementById('company').value, 
+        dept: document.getElementById('dept').value, 
+        type: document.getElementById('leaveType').value, 
+        startDate: document.getElementById('l-start').value, 
+        endDate: document.getElementById('l-end').value,
+        agentName: agent // 傳送代理人姓名
+    });
   }
   
   function submitOvertime() {
     updateStatus("傳送加班...", "loading");
-    sendToGAS({ action: "requestOvertime", credential: currentUserToken, overtimeType: document.getElementById('otType').value, startDate: document.getElementById('ot-start').value, endDate: document.getElementById('ot-end').value, company: document.getElementById('company').value, dept: document.getElementById('dept').value });
+    sendToGAS({ 
+        action: "requestOvertime", 
+        credential: currentUserToken, 
+        overtimeType: document.getElementById('otType').value, 
+        startDate: document.getElementById('ot-start').value, 
+        endDate: document.getElementById('ot-end').value, 
+        company: document.getElementById('company').value, 
+        dept: document.getElementById('dept').value 
+    });
   }
 
   function loadHistory() {
     document.getElementById('history-list').innerHTML = "<p style='text-align:center'>讀取中...</p>";
-    fetch(GAS_URL, { 
-      method: "POST", 
-      body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) 
-    })
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) })
     .then(r => r.json())
     .then(data => {
         let html = "";
-        
-        // 請假區
+        // 顯示列表 (略，與之前類似，但現在會顯示正確的簽核狀態)
         if(data.leave.length > 0) {
-            html += `<div class="history-group"><div class="history-title">請假申請</div>`;
+            html += `<p style="font-size:12px;color:#666;border-bottom:1px solid #ddd;">請假</p>`;
             data.leave.forEach(item => {
-               html += `<div class="history-item">
-                          <span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span>
-                          <span class="status-badge status-wait">${item.status}</span>
-                        </div>`; 
+               html += `<div class="history-item"><span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span><span style="background:#fff3cd;padding:3px;border-radius:4px;font-size:12px;">${item.status}</span></div>`; 
             });
-            html += `</div>`;
         }
-
-        // 加班區
         if(data.overtime.length > 0) {
-            html += `<div class="history-group"><div class="history-title">加班申請</div>`;
+            html += `<p style="font-size:12px;color:#666;border-bottom:1px solid #ddd;margin-top:10px;">加班</p>`;
             data.overtime.forEach(item => {
-               html += `<div class="history-item">
-                          <span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span>
-                          <span class="status-badge status-wait">${item.status}</span>
-                        </div>`; 
+               html += `<div class="history-item"><span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span><span style="background:#fff3cd;padding:3px;border-radius:4px;font-size:12px;">${item.status}</span></div>`; 
             });
-            html += `</div>`;
         }
-        
-        // 打卡區
-        html += `<div class="history-group"><div class="history-title">最近打卡</div>`;
-        if(data.clock.length > 0) {
-            data.clock.forEach(item => {
-                let sClass = item.status === "正常" ? "status-ok" : "status-no";
-                html += `<div class="history-item"><span>${item.type} <small>${item.time}</small></span><span class="status-badge ${sClass}">${item.status}</span></div>`;
-            });
-        } else { html += "<p style='padding:5px;text-align:center;font-size:12px;'>無紀錄</p>"; }
-        html += `</div>`;
-
-        document.getElementById('history-list').innerHTML = html;
+        document.getElementById('history-list').innerHTML = html || "<p style='text-align:center'>無紀錄</p>";
     });
-  }
-
-  function calcLeave(dateStr) {
-     if(!dateStr) return;
-     fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: dateStr }) })
-     .then(r => r.json())
-     .then(d => document.getElementById('leaveRes').innerText = d.days || 0);
   }
 
   function sendToGAS(data) {
