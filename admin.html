@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>後台管理系統</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    
+    .btn-approve { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+    .btn-reject { background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+    .btn-approve:hover { background: #218838; }
+    
+    .hidden { display: none; }
+    .role-select { margin-bottom: 20px; text-align: center; padding: 10px; background: #e9ecef; border-radius: 5px; }
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<div class="container">
+  <h2>📋 後台管理系統</h2>
+  
+  <div id="login-section" style="text-align:center;">
+    <p>請管理員登入</p>
+    <div id="g_id_onload"
+         data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+  </div>
+
+  <div id="admin-panel" class="hidden">
+    <div class="role-select">
+        <label>我是：</label>
+        <select id="currentRole">
+            <option value="agent">代理人</option>
+            <option value="leader">領班</option>
+            <option value="boss">老闆</option>
+            <option value="client" selected>甲方(電廠)</option>
+        </select>
+        <button onclick="loadData()">🔄 重新整理列表</button>
+    </div>
+
+    <h3>請假審核</h3>
+    <table id="leaveTable">
+        <thead>
+            <tr><th>姓名</th><th>假別</th><th>時間</th><th>目前狀態</th><th>審核</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3 style="margin-top:40px;">加班審核</h3>
+    <table id="otTable">
+        <thead>
+            <tr><th>姓名</th><th>類型</th><th>時間</th><th>目前狀態</th><th>審核</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // ★★★ 換成你的 /exec 網址 ★★★
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
+  let token = null;
+
+  function handleCredentialResponse(res) {
+    token = res.credential;
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('admin-panel').classList.remove('hidden');
+    loadData();
+  }
+
+  function loadData() {
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getAdminData", credential: token }) })
+    .then(r => r.json())
+    .then(res => {
+        if(res.success) {
+            renderTable('leaveTable', res.data.leave, 'leave');
+            renderTable('otTable', res.data.overtime, 'overtime');
+        } else {
+            alert(res.message);
+        }
+    });
+  }
+
+  function renderTable(tableId, data, category) {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    tbody.innerHTML = "";
+    data.forEach(item => {
+        // 簡單顯示目前各級狀態
+        let statusText = `
+           <small>代:${item.agent}</small> <small>領:${item.leader}</small><br>
+           <small>老:${item.boss}</small> <small style="color:blue">甲:${item.client}</small>
+        `;
+        
+        // 如果目前身分已經審核過，就顯示文字，不然顯示按鈕
+        let role = document.getElementById('currentRole').value;
+        let myStatus = item[role]; // 取得目前身分那一欄的狀態 (例如 item.client)
+        
+        let actionBtns = "";
+        if(myStatus === '待審核') {
+            actionBtns = `
+                <button class="btn-approve" onclick="review('${category}', ${item.id}, '同意')">同意</button>
+                <button class="btn-reject" onclick="review('${category}', ${item.id}, '退回')">退回</button>
+            `;
+        } else {
+            actionBtns = `<span>${myStatus}</span>`;
+        }
+
+        let row = `<tr>
+            <td>${item.name}</td>
+            <td>${item.type}</td>
+            <td><small>${item.start.replace('T',' ')}<br>~<br>${item.end.replace('T',' ')}</small></td>
+            <td>${statusText}</td>
+            <td>${actionBtns}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+    });
+  }
+
+  function review(category, id, decision) {
+    let role = document.getElementById('currentRole').value;
+    if(!confirm(`確定要以 [${role}] 身分 [${decision}] 嗎？`)) return;
+
+    fetch(GAS_URL, { 
+        method: "POST", 
+        body: JSON.stringify({ 
+            action: "reviewRequest", 
+            credential: token,
+            category: category,
+            id: id,
+            role: role,
+            decision: decision
+        }) 
+    })
+    .then(r => r.json())
+    .then(res => {
+        alert(res.message);
+        loadData(); // 重新整理
+    });
+  }
+</script>
+</body>
+</html>
