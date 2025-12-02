@@ -36,7 +36,15 @@
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
-    .history-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
+    
+    /* 歷史紀錄樣式 */
+    .history-group { margin-bottom: 15px; }
+    .history-title { font-size: 12px; color: #666; font-weight: bold; margin-bottom: 5px; border-left: 3px solid #1a73e8; padding-left: 5px; }
+    .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; background: #eee; color: #555; }
+    .status-ok { background: #d4edda; color: #155724; }
+    .status-wait { background: #fff3cd; color: #856404; }
+    .status-no { background: #f8d7da; color: #721c24; }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -66,8 +74,8 @@
     </div>
 
     <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px; border:1px solid #eee; border-radius:8px;">
-        <label>員工姓名 (資料庫同步用)</label><input type="text" id="dbName" placeholder="請輸入真實姓名">
-        <label>職稱</label><input type="text" id="jobTitle" placeholder="例如：技術員">
+        <label>員工姓名 (資料庫同步)</label><input type="text" id="dbName">
+        <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
         <button class="btn-in" onclick="saveProfile()">儲存並同步</button>
@@ -77,7 +85,7 @@
       <div class="tab active" onclick="switchTab('clock')">打卡</div>
       <div class="tab" onclick="switchTab('leave')">請假</div>
       <div class="tab" onclick="switchTab('overtime')">加班</div>
-      <div class="tab" onclick="switchTab('history')">紀錄</div>
+      <div class="tab" onclick="switchTab('history')">進度查詢</div>
     </div>
 
     <div id="tab-clock">
@@ -93,7 +101,7 @@
     </div>
 
     <div id="tab-leave" class="hidden">
-        <label>到職日 (資料庫讀取)</label>
+        <label>到職日</label>
         <input type="date" id="onboardDate" disabled style="background:#e9ecef;">
         <p>特休天數：<span id="leaveRes" style="color:blue; font-weight:bold;">0</span> 天</p>
         <hr>
@@ -111,8 +119,8 @@
     </div>
 
     <div id="tab-history" class="hidden">
-        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理</button>
-        <div id="history-list" style="background:#fafafa; padding:5px;"></div>
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理進度</button>
+        <div id="history-list" style="background:#fff;"></div>
     </div>
 
     <div id="status-box"></div>
@@ -120,7 +128,7 @@
 </div>
 
 <script>
-  // ★★★ 請換成最新的 /exec 網址 ★★★
+  // ★★★ 務必換成你的 /exec 網址 ★★★
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
@@ -129,34 +137,23 @@
   let currentUserToken = null;
   let currentLat = 0, currentLng = 0, currentDist = 9999;
 
-  // 初始化：設定預設時間為 今日 08:00 與 16:30
   function setDefaultTimes() {
     const now = new Date();
-    // 轉為 YYYY-MM-DD 格式
     const ymd = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
-    
-    // 設定所有 datetime-local 的預設值
-    const startVal = ymd + "T08:00";
-    const endVal = ymd + "T16:30";
-
-    document.getElementById('l-start').value = startVal;
-    document.getElementById('l-end').value = endVal;
-    document.getElementById('ot-start').value = startVal;
-    document.getElementById('ot-end').value = endVal;
+    document.getElementById('l-start').value = ymd + "T08:00";
+    document.getElementById('l-end').value = ymd + "T16:30";
+    document.getElementById('ot-start').value = ymd + "T08:00";
+    document.getElementById('ot-end').value = ymd + "T16:30";
   }
 
   function handleCredentialResponse(response) {
     try {
       const payload = parseJwt(response.credential);
       currentUserToken = response.credential;
-      
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
-      
-      // 顯示 Google 照片，但名字等待資料庫讀取
       document.getElementById('u-photo').src = payload.picture;
-      
-      setDefaultTimes(); // 設定預設時間
+      setDefaultTimes();
       fetchProfile();
       startGPS();
     } catch (e) { alert("登入錯誤：" + e); }
@@ -172,11 +169,9 @@
     .then(data => {
       updateStatus("", "");
       if(data.found) {
-        // 顯示資料庫中的姓名
         document.getElementById('u-name').innerText = data.name || "未設定姓名";
         document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
         
-        // 填入修改表單
         document.getElementById('dbName').value = data.name;
         document.getElementById('jobTitle').value = data.jobTitle;
         document.getElementById('company').value = data.company;
@@ -188,7 +183,7 @@
         }
       } else {
         document.getElementById('u-name').innerText = "新員工";
-        document.getElementById('u-company-display').innerText = "請點擊修改資料";
+        document.getElementById('u-company-display').innerText = "請修改資料";
         document.getElementById('meta-form').classList.remove('hidden');
       }
     });
@@ -196,69 +191,44 @@
 
   function saveProfile() {
     const name = document.getElementById('dbName').value;
-    const title = document.getElementById('jobTitle').value;
-    const company = document.getElementById('company').value;
-    const dept = document.getElementById('dept').value;
-    
     if(!name) { alert("請輸入員工姓名"); return; }
-
     updateStatus("儲存中...", "loading");
     fetch(GAS_URL, { 
       method: "POST", 
       body: JSON.stringify({ 
-        action: "updateProfile", 
-        credential: currentUserToken, 
-        name: name,
-        jobTitle: title,
-        company: company, 
-        dept: dept 
+        action: "updateProfile", credential: currentUserToken, 
+        name: name, jobTitle: document.getElementById('jobTitle').value,
+        company: document.getElementById('company').value, dept: document.getElementById('dept').value 
       }) 
     })
     .then(r => r.json())
     .then(res => {
       updateStatus(res.message, "success");
-      // 更新介面
       document.getElementById('u-name').innerText = name;
-      document.getElementById('u-company-display').innerText = company + " / " + dept;
+      document.getElementById('u-company-display').innerText = document.getElementById('company').value + " / " + document.getElementById('dept').value;
       document.getElementById('meta-form').classList.add('hidden');
     });
   }
 
   function doClock(type) {
-    const company = document.getElementById('company').value;
-    if(!company) { alert("請先設定資料"); return; }
+    if(!document.getElementById('company').value) { alert("請先設定資料"); return; }
     if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
-
     updateStatus("打卡中...", "loading");
-    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: company, dept: document.getElementById('dept').value, lat: currentLat, lng: currentLng });
+    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: document.getElementById('company').value, dept: document.getElementById('dept').value, lat: currentLat, lng: currentLng });
   }
 
   function submitLeave() {
     updateStatus("傳送假單...", "loading");
-    sendToGAS({ 
-        action: "requestLeave", 
-        credential: currentUserToken, 
-        company: document.getElementById('company').value, 
-        dept: document.getElementById('dept').value, 
-        type: document.getElementById('leaveType').value, 
-        startDate: document.getElementById('l-start').value, 
-        endDate: document.getElementById('l-end').value 
-    });
+    sendToGAS({ action: "requestLeave", credential: currentUserToken, company: document.getElementById('company').value, dept: document.getElementById('dept').value, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value });
   }
   
   function submitOvertime() {
     updateStatus("傳送加班...", "loading");
-    sendToGAS({ 
-        action: "requestOvertime", 
-        credential: currentUserToken, 
-        overtimeType: document.getElementById('otType').value, 
-        startDate: document.getElementById('ot-start').value, 
-        endDate: document.getElementById('ot-end').value 
-    });
+    sendToGAS({ action: "requestOvertime", credential: currentUserToken, overtimeType: document.getElementById('otType').value, startDate: document.getElementById('ot-start').value, endDate: document.getElementById('ot-end').value, company: document.getElementById('company').value, dept: document.getElementById('dept').value });
   }
 
   function loadHistory() {
-    document.getElementById('history-list').innerHTML = "載入中...";
+    document.getElementById('history-list').innerHTML = "<p style='text-align:center'>讀取中...</p>";
     fetch(GAS_URL, { 
       method: "POST", 
       body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) 
@@ -266,17 +236,47 @@
     .then(r => r.json())
     .then(data => {
         let html = "";
-        if(data.clock && data.clock.length > 0) {
-            data.clock.forEach(item => {
-                let color = item.status === "正常" ? "green" : "red";
-                html += `<div class="history-item"><span>${item.type} <small>${item.time}</small></span><span style="color:${color}">${item.status}</span></div>`;
+        
+        // 請假區
+        if(data.leave.length > 0) {
+            html += `<div class="history-group"><div class="history-title">請假申請</div>`;
+            data.leave.forEach(item => {
+               html += `<div class="history-item">
+                          <span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span>
+                          <span class="status-badge status-wait">${item.status}</span>
+                        </div>`; 
             });
-        } else { html = "<p style='text-align:center'>無紀錄</p>"; }
+            html += `</div>`;
+        }
+
+        // 加班區
+        if(data.overtime.length > 0) {
+            html += `<div class="history-group"><div class="history-title">加班申請</div>`;
+            data.overtime.forEach(item => {
+               html += `<div class="history-item">
+                          <span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span>
+                          <span class="status-badge status-wait">${item.status}</span>
+                        </div>`; 
+            });
+            html += `</div>`;
+        }
+        
+        // 打卡區
+        html += `<div class="history-group"><div class="history-title">最近打卡</div>`;
+        if(data.clock.length > 0) {
+            data.clock.forEach(item => {
+                let sClass = item.status === "正常" ? "status-ok" : "status-no";
+                html += `<div class="history-item"><span>${item.type} <small>${item.time}</small></span><span class="status-badge ${sClass}">${item.status}</span></div>`;
+            });
+        } else { html += "<p style='padding:5px;text-align:center;font-size:12px;'>無紀錄</p>"; }
+        html += `</div>`;
+
         document.getElementById('history-list').innerHTML = html;
     });
   }
 
   function calcLeave(dateStr) {
+     if(!dateStr) return;
      fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: dateStr }) })
      .then(r => r.json())
      .then(d => document.getElementById('leaveRes').innerText = d.days || 0);
