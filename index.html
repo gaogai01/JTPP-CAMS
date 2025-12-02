@@ -3,53 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>尖山電廠打卡系統</title>
+  <title>尖山電廠系統</title>
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
     .container { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
     .hidden { display: none !important; }
+    
     input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; margin-top: 10px; }
     
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; }
+    
     .btn-in { background-color: #1a73e8; } 
     .btn-out { background-color: #d93025; }
     .btn-leave { background-color: #f9ab00; color: black; }
     .btn-back { background-color: #188038; }
+    .btn-ot { background-color: #6f42c1; } /* 紫色加班按鈕 */
     .btn-edit { background-color: #6c757d; font-size: 12px; padding: 5px 10px; width: auto; margin-left: 10px; }
     
     #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
     #user-info img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 2px solid white; }
     .user-details { flex-grow: 1; }
     .user-name { font-weight: bold; font-size: 16px; color: #1f1f1f; }
-    .user-meta { font-size: 13px; color: #666; margin-top: 2px; }
-
+    
     #status-box { text-align: center; padding: 10px; margin-top: 15px; border-radius: 5px; font-weight: bold; }
     .success { background: #d4edda; color: #155724; }
     .error { background: #f8d7da; color: #721c24; }
     .loading { background: #cce5ff; color: #004085; }
 
-    .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; }
-    .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; color: #666; font-weight: bold; }
+    /* 四個分頁標籤 */
+    .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
+    .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
+    
+    /* 歷史紀錄列表 */
+    .history-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
 <div class="container">
-  <h2>⚡ 尖山電廠承包商系統</h2>
+  <h2>⚡ 尖山電廠系統</h2>
 
   <div id="login-section">
-    <p style="text-align:center; color:#666; margin-bottom: 20px;">請使用 Google 帳號登入 (同步員工資料)</p>
+    <p style="text-align:center; color:#666;">請使用 Google 帳號登入</p>
     <div id="g_id_onload"
          data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com"
          data-callback="handleCredentialResponse"
          data-auto_prompt="false">
     </div>
-    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"></div>
   </div>
 
   <div id="main-section" class="hidden">
@@ -63,42 +69,60 @@
       <button class="btn-edit" onclick="toggleEditMode()">修改資料</button>
     </div>
 
-    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
-        <label>承攬商公司</label>
-        <input type="text" id="company" placeholder="例如：瑞慶企業行">
-        <label>甲方部門</label>
-        <input type="text" id="dept" placeholder="例如：環化課">
-        <p style="font-size:12px; color:#666;">* 到職日請聯繫管理員從試算表修改</p>
-        <button class="btn-in" onclick="saveProfile()" style="margin-top:5px;">儲存並同步到資料庫</button>
+    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px;">
+        <label>承攬商公司</label><input type="text" id="company">
+        <label>甲方部門</label><input type="text" id="dept">
+        <button class="btn-in" onclick="saveProfile()">儲存並同步</button>
     </div>
 
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('clock')">打卡作業</div>
-      <div class="tab" onclick="switchTab('leave')">請假申請</div>
+      <div class="tab active" onclick="switchTab('clock')">打卡</div>
+      <div class="tab" onclick="switchTab('leave')">請假</div>
+      <div class="tab" onclick="switchTab('overtime')">加班</div>
+      <div class="tab" onclick="switchTab('history')">紀錄</div>
     </div>
 
     <div id="tab-clock">
-        <p style="text-align:center; font-size:14px; color:#555; margin:0 0 10px 0;">
-           📍 GPS 距離：<span id="dist-display" style="color:blue;">偵測中...</span> 公尺
+        <p style="text-align:center; color:#555; margin-bottom:10px;">
+           📍 GPS 距離：<span id="dist-display" style="color:blue;">偵測中...</span>
         </p>
         <div class="btn-grid">
             <button class="btn-in" onclick="doClock('上班')">上班打卡<br><span style="font-size:12px;">(08:00前)</span></button>
-            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><span style="font-size:12px;">(開始請假)</span></button>
-            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><span style="font-size:12px;">(結束請假)</span></button>
+            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><span style="font-size:12px;">(紀錄時間)</span></button>
+            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><span style="font-size:12px;">(紀錄時間)</span></button>
             <button class="btn-out" onclick="doClock('下班')">下班打卡<br><span style="font-size:12px;">(16:30後)</span></button>
         </div>
     </div>
 
     <div id="tab-leave" class="hidden">
-        <label>到職日 (從資料庫讀取)</label>
+        <label>到職日 (資料庫讀取)</label>
         <input type="date" id="onboardDate" disabled style="background:#e9ecef;">
         <p>特休天數：<span id="leaveRes" style="color:blue; font-weight:bold;">0</span> 天</p>
         <hr>
         <label>假別</label>
         <select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
-        <label>開始時間</label><input type="datetime-local" id="l-start">
-        <label>結束時間</label><input type="datetime-local" id="l-end">
+        <label>開始</label><input type="datetime-local" id="l-start">
+        <label>結束</label><input type="datetime-local" id="l-end">
         <button class="btn-back" onclick="submitLeave()">送出假單</button>
+    </div>
+
+    <div id="tab-overtime" class="hidden">
+        <label>加班補償方式</label>
+        <select id="otType">
+            <option value="申請加班費">申請加班費 (待遇)</option>
+            <option value="申請補休">申請補休</option>
+        </select>
+        <label>開始時間</label><input type="datetime-local" id="ot-start">
+        <label>結束時間</label><input type="datetime-local" id="ot-end">
+        <button class="btn-ot" onclick="submitOvertime()">送出加班申請</button>
+    </div>
+
+    <div id="tab-history" class="hidden">
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理紀錄</button>
+        <label>最近 5 筆打卡</label>
+        <div id="history-list" style="background:#fafafa; border:1px solid #eee; border-radius:5px; padding:5px;">
+            <p style="text-align:center; color:#999;">載入中...</p>
+        </div>
     </div>
 
     <div id="status-box"></div>
@@ -106,7 +130,7 @@
 </div>
 
 <script>
-  // ★★★ 務必換成你最新的 /exec 網址 ★★★
+  // ★★★ 務必確認這是最新的 /exec 網址 ★★★
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
@@ -114,28 +138,26 @@
   
   let currentUserToken = null;
   let currentLat = 0, currentLng = 0, currentDist = 9999;
+  let userEmail = "";
 
   function handleCredentialResponse(response) {
     try {
       const payload = parseJwt(response.credential);
       currentUserToken = response.credential;
+      userEmail = payload.email; // 記住 Email 供查詢用
       
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
-      
       document.getElementById('u-name').innerText = payload.name;
       document.getElementById('u-photo').src = payload.picture;
       
-      // ★ 登入後，立刻從資料庫抓資料
       fetchProfile();
-      
       startGPS();
     } catch (e) { alert("登入錯誤：" + e); }
   }
 
-  // 從後端讀取個人資料
   function fetchProfile() {
-    updateStatus("正在同步員工資料...", "loading");
+    updateStatus("讀取資料中...", "loading");
     fetch(GAS_URL, { 
       method: "POST", 
       body: JSON.stringify({ action: "getProfile", credential: currentUserToken }) 
@@ -144,14 +166,11 @@
     .then(data => {
       updateStatus("", "");
       if(data.found) {
-        // 填入資料
         document.getElementById('company').value = data.company;
         document.getElementById('dept').value = data.dept;
         document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
-        
         if(data.onboardDate) {
            document.getElementById('onboardDate').value = data.onboardDate;
-           // 自動計算特休
            calcLeave(data.onboardDate);
         }
       } else {
@@ -161,21 +180,13 @@
     });
   }
 
-  // 儲存資料 (寫回 Google 試算表)
   function saveProfile() {
-    const company = document.getElementById('company').value.trim();
-    const dept = document.getElementById('dept').value.trim();
-    if(!company || !dept) { alert("請輸入完整資料"); return; }
-    
+    const company = document.getElementById('company').value;
+    const dept = document.getElementById('dept').value;
     updateStatus("儲存中...", "loading");
     fetch(GAS_URL, { 
       method: "POST", 
-      body: JSON.stringify({ 
-        action: "updateProfile", 
-        credential: currentUserToken,
-        company: company,
-        dept: dept
-      }) 
+      body: JSON.stringify({ action: "updateProfile", credential: currentUserToken, company: company, dept: dept }) 
     })
     .then(r => r.json())
     .then(res => {
@@ -183,6 +194,94 @@
       document.getElementById('u-company-display').innerText = company + " / " + dept;
       document.getElementById('meta-form').classList.add('hidden');
     });
+  }
+
+  // 加班申請
+  function submitOvertime() {
+    const type = document.getElementById('otType').value;
+    const start = document.getElementById('ot-start').value;
+    const end = document.getElementById('ot-end').value;
+    if(!start || !end) { alert("請選擇時間"); return; }
+    
+    updateStatus("傳送加班申請...", "loading");
+    sendToGAS({ 
+        action: "requestOvertime", 
+        credential: currentUserToken, 
+        overtimeType: type, 
+        startDate: start, 
+        endDate: end,
+        company: document.getElementById('company').value,
+        dept: document.getElementById('dept').value
+    });
+  }
+
+  // 查詢紀錄
+  function loadHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = "<p style='text-align:center'>重新載入中...</p>";
+    
+    fetch(GAS_URL, { 
+      method: "POST", 
+      body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) 
+    })
+    .then(r => r.json())
+    .then(data => {
+        let html = "";
+        if(data.clock && data.clock.length > 0) {
+            data.clock.forEach(item => {
+                let color = item.status === "正常" ? "green" : "red";
+                html += `<div class="history-item">
+                            <span>${item.type} <small style="color:#999">${item.time}</small></span>
+                            <span style="color:${color}">${item.status}</span>
+                         </div>`;
+            });
+        } else {
+            html = "<p style='text-align:center; padding:10px;'>尚無打卡紀錄</p>";
+        }
+        list.innerHTML = html;
+    });
+  }
+
+  function calcLeave(dateStr) {
+     if(!dateStr) return;
+     // ★ 關鍵修正：確保日期格式正確，避免 undefined
+     fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: dateStr }) })
+     .then(r => r.json())
+     .then(d => {
+         // 強制轉換為數字顯示
+         let days = d.days !== undefined ? d.days : 0;
+         document.getElementById('leaveRes').innerText = days;
+     });
+  }
+
+  function doClock(type) {
+    const company = document.getElementById('company').value;
+    const dept = document.getElementById('dept').value;
+    if(!company) { alert("請先設定資料"); return; }
+    if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)，無法打卡！`); return; }
+
+    updateStatus("打卡中...", "loading");
+    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: company, dept: dept, lat: currentLat, lng: currentLng });
+  }
+
+  function submitLeave() {
+    const company = document.getElementById('company').value;
+    const dept = document.getElementById('dept').value;
+    updateStatus("傳送假單...", "loading");
+    sendToGAS({ action: "requestLeave", credential: currentUserToken, company: company, dept: dept, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value });
+  }
+
+  function sendToGAS(data) {
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) })
+    .then(r => r.json())
+    .then(res => updateStatus(res.message, res.success ? "success" : "error"))
+    .catch(e => updateStatus("連線失敗", "error"));
+  }
+
+  function updateStatus(msg, type) {
+    const box = document.getElementById('status-box');
+    box.innerText = msg;
+    box.className = type;
   }
 
   function parseJwt (token) {
@@ -201,69 +300,26 @@
             currentLng = pos.coords.longitude;
             currentDist = getDist(currentLat, currentLng, TARGET_LAT, TARGET_LNG);
             document.getElementById('dist-display').innerText = Math.round(currentDist);
-        }, (err) => { document.getElementById('dist-display').innerText = "定位失敗"; }, { enableHighAccuracy: true });
+        }, (err) => {}, { enableHighAccuracy: true });
     }
-  }
-
-  function doClock(type) {
-    const company = document.getElementById('company').value;
-    const dept = document.getElementById('dept').value;
-    if(!company || !dept) { alert("請先設定資料"); document.getElementById('meta-form').classList.remove('hidden'); return; }
-    if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)，無法打卡！`); return; }
-
-    updateStatus("打卡中...", "loading");
-    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: company, dept: dept, lat: currentLat, lng: currentLng });
-  }
-
-  function submitLeave() {
-    const company = document.getElementById('company').value;
-    const dept = document.getElementById('dept').value;
-    if(!company) { alert("請先設定資料"); return; }
-    updateStatus("傳送假單...", "loading");
-    sendToGAS({ action: "requestLeave", credential: currentUserToken, company: company, dept: dept, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value });
-  }
-
-  // 前端直接計算特休 (不需再問後端)
-  function calcLeave(dateStr) {
-     if(!dateStr) return;
-     // 重用後端的計算邏輯，只是搬到前端顯示
-     fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: dateStr }) })
-     .then(r => r.json()).then(d => document.getElementById('leaveRes').innerText = d.days);
-  }
-
-  function sendToGAS(data) {
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) })
-    .then(r => r.json())
-    .then(res => updateStatus(res.message, res.success ? "success" : "error"))
-    .catch(e => updateStatus("連線失敗", "error"));
-  }
-
-  function updateStatus(msg, type) {
-    const box = document.getElementById('status-box');
-    box.innerText = msg;
-    box.className = type;
-  }
-
-  function toggleEditMode() {
-    const form = document.getElementById('meta-form');
-    form.classList.toggle('hidden');
   }
 
   function switchTab(t) {
-    document.getElementById('status-box').innerText = "";
-    if(t==='clock'){
-        document.getElementById('tab-clock').classList.remove('hidden');
-        document.getElementById('tab-leave').classList.add('hidden');
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.querySelectorAll('.tab')[1].classList.remove('active');
-    } else {
-        document.getElementById('tab-clock').classList.add('hidden');
-        document.getElementById('tab-leave').classList.remove('hidden');
-        document.querySelectorAll('.tab')[0].classList.remove('active');
-        document.querySelectorAll('.tab')[1].classList.add('active');
-    }
+    ['clock', 'leave', 'overtime', 'history'].forEach(id => {
+        document.getElementById('tab-'+id).classList.add('hidden');
+    });
+    document.getElementById('tab-'+t).classList.remove('hidden');
+    
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    // 簡單的 active 樣式切換邏輯
+    const index = ['clock', 'leave', 'overtime', 'history'].indexOf(t);
+    document.querySelectorAll('.tab')[index].classList.add('active');
+    
+    if(t === 'history') loadHistory(); // 切換到歷史紀錄時自動載入
   }
 
+  function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
+  
   function getDist(lat1, lon1, lat2, lon2) {
     var R = 6371000, dLat = (lat2-lat1)*(Math.PI/180), dLon = (lon2-lon1)*(Math.PI/180);
     var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2);
