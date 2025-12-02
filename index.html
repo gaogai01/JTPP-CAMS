@@ -3,276 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>尖山電廠承包商管理系統</title>
+  <title>尖山電廠打卡系統</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f0f2f5; }
-    .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f0f2f5; }
+    .container { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
-    
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-    input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-    
-    button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-primary { background-color: #1a73e8; color: white; }
-    .btn-danger { background-color: #d93025; color: white; }
-    .btn-success { background-color: #188038; color: white; }
-    button:disabled { background-color: #ccc; cursor: not-allowed; }
-    
     .hidden { display: none; }
-    #status, #gps-info { margin-top: 15px; text-align: center; font-size: 14px; line-height: 1.5; }
-    .error { color: #d93025; }
-    .success { color: #188038; }
+    input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+    label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; }
     
-    .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
-    .tab-btn { flex: 1; padding: 10px; background: none; color: #555; border-radius: 0; }
-    .tab-btn.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
+    /* 按鈕 */
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; }
+    .btn-in { background-color: #1a73e8; } 
+    .btn-out { background-color: #d93025; }
+    .btn-leave { background-color: #f9ab00; color: black; }
+    .btn-back { background-color: #188038; }
+    
+    /* 狀態與登入 */
+    #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+    #user-info img { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+    #status-box { text-align: center; padding: 10px; margin-top: 15px; border-radius: 5px; font-weight: bold; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    
+    .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; }
+    .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #666; }
+    .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; font-weight: bold; }
   </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
 <div class="container">
-  <h2>尖山電廠承包商系統</h2>
+  <h2>⚡ 尖山電廠承包商系統</h2>
 
-  <div id="loginSection">
-    <div class="form-group">
-      <label>員工姓名</label>
-      <input type="text" id="inputName" placeholder="例如：王家昇">
+  <div id="login-section">
+    <p style="text-align:center; color:#666;">請使用 Google 帳號登入 (防代打卡)</p>
+    <div id="g_id_onload"
+         data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
     </div>
-    <div class="form-group">
-      <label>承攬商公司名稱</label>
-      <input type="text" id="inputCompany" placeholder="例如：瑞慶企業行">
-    </div>
-    <div class="form-group">
-      <label>甲方部門</label>
-      <input type="text" id="inputDept" placeholder="例如：環化課">
-    </div>
-    <button class="btn-primary" onclick="saveUserInfo()">確認資料並進入</button>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
   </div>
 
-  <div id="mainSection" class="hidden">
-    <p>你好，<span id="displayUser" style="font-weight:bold;"></span></p>
-    
+  <div id="main-section" class="hidden">
+    <div id="user-info">
+      <img id="u-photo" src="" alt="">
+      <div>
+        <div id="u-name" style="font-weight:bold;"></div>
+        <div id="u-email" style="font-size:12px; color:#666;"></div>
+      </div>
+    </div>
+
+    <div id="meta-form">
+        <label>承攬商公司</label>
+        <input type="text" id="company" placeholder="例如：瑞慶企業行">
+        <label>甲方部門</label>
+        <input type="text" id="dept" placeholder="例如：環化課">
+    </div>
+
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('clockIn')">打卡</button>
-      <button class="tab-btn" onclick="switchTab('leave')">請假</button>
+      <div class="tab active" onclick="switchTab('clock')">打卡作業</div>
+      <div class="tab" onclick="switchTab('leave')">請假申請</div>
     </div>
 
-    <div id="clockInTab">
-      <div id="gps-info" style="color: #666; margin-bottom: 10px;">尚未定位</div>
-      <button class="btn-primary" onclick="executeClockIn('上班')">上班打卡 (08:00前)</button>
-      <button class="btn-danger" onclick="executeClockIn('下班')">下班打卡 (16:30後)</button>
+    <div id="tab-clock">
+        <p style="text-align:center; font-size:13px; color:#555; margin:0;">
+           📍 GPS 距離電廠：<span id="dist-display">偵測中...</span> 公尺
+        </p>
+        
+        <div class="btn-grid">
+            <button class="btn-in" onclick="doClock('上班')">上班打卡<br><span style="font-size:12px; font-weight:normal;">(08:00前)</span></button>
+            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><span style="font-size:12px; font-weight:normal;">(開始請假)</span></button>
+            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><span style="font-size:12px; font-weight:normal;">(結束請假)</span></button>
+            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><span style="font-size:12px; font-weight:normal;">(16:30後)</span></button>
+        </div>
+        <p style="font-size:12px; color:#d93025; margin-top:5px; text-align:center;">* 12:00~12:30 休息時間系統自動扣除</p>
     </div>
 
-    <div id="leaveTab" class="hidden">
-      <div class="form-group">
-        <label>到職日 (試算特休用)</label>
-        <input type="date" id="onboardDate" onchange="calculateLeave()">
-        <p>預估特休：<span id="leaveDays">0</span> 天</p>
-      </div>
-      <hr>
-      <div class="form-group">
+    <div id="tab-leave" class="hidden">
+        <label>到職日 (特休試算)</label>
+        <input type="date" id="onboardDate" onchange="calcLeave()">
+        <p>特休天數：<span id="leaveRes" style="color:blue;">0</span> 天</p>
+        <hr>
         <label>假別</label>
-        <select id="leaveType">
-          <option value="特休">特休</option>
-          <option value="事假">事假</option>
-          <option value="病假">病假</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>開始日期</label>
-        <input type="date" id="leaveStart">
-      </div>
-      <div class="form-group">
-        <label>結束日期</label>
-        <input type="date" id="leaveEnd">
-      </div>
-      <button class="btn-success" onclick="submitLeave()">送出假單</button>
+        <select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
+        <label>開始時間</label><input type="datetime-local" id="l-start">
+        <label>結束時間</label><input type="datetime-local" id="l-end">
+        <button class="btn-in" onclick="submitLeave()">送出假單</button>
     </div>
 
-    <div id="status"></div>
+    <div id="status-box"></div>
   </div>
 </div>
 
 <script>
-  // ================= 設定區 =================
-  // 請填入你的 GAS 網頁應用程式網址
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec';
-  
-  // 尖山發電廠 GPS
+  // ★★★ 請替換成你的 Apps Script 網址 (結尾是 /exec) ★★★
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
+
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
-  const ALLOWED_RADIUS = 100; // 公尺
-  // =========================================
+  const MAX_DIST = 100; // 公尺
+  let currentUserToken = null;
+  let currentLat = 0, currentLng = 0, currentDist = 9999;
 
-  let userInfo = {};
-
-  // 1. 處理使用者資料 (模擬登入)
-  function saveUserInfo() {
-    const name = document.getElementById('inputName').value.trim();
-    const company = document.getElementById('inputCompany').value.trim();
-    const dept = document.getElementById('inputDept').value.trim();
-
-    if (!name || !company || !dept) {
-      alert("請完整填寫所有欄位");
-      return;
-    }
-
-    userInfo = { name, company, dept };
-    document.getElementById('displayUser').innerText = name + " (" + company + ")";
-    
-    // 切換顯示
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('mainSection').classList.remove('hidden');
+  function handleCredentialResponse(response) {
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    currentUserToken = response.credential;
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('main-section').classList.remove('hidden');
+    document.getElementById('u-name').innerText = payload.name;
+    document.getElementById('u-email').innerText = payload.email;
+    document.getElementById('u-photo').src = payload.picture;
+    startGPS();
   }
 
-  // 2. 切換分頁
-  function switchTab(tab) {
-    document.getElementById('status').innerText = "";
-    if (tab === 'clockIn') {
-      document.getElementById('clockInTab').classList.remove('hidden');
-      document.getElementById('leaveTab').classList.add('hidden');
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.querySelectorAll('.tab-btn')[1].classList.remove('active');
-    } else {
-      document.getElementById('clockInTab').classList.add('hidden');
-      document.getElementById('leaveTab').classList.remove('hidden');
-      document.querySelectorAll('.tab-btn')[0].classList.remove('active');
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  function startGPS() {
+    if(navigator.geolocation) {
+        navigator.geolocation.watchPosition((pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            currentDist = getDist(currentLat, currentLng, TARGET_LAT, TARGET_LNG);
+            document.getElementById('dist-display').innerText = Math.round(currentDist);
+        }, (err) => { document.getElementById('dist-display').innerText = "失敗"; }, { enableHighAccuracy: true });
     }
   }
 
-  // 3. 執行打卡 (包含 GPS 驗證)
-  function executeClockIn(type) {
-    const statusDiv = document.getElementById('status');
-    const gpsDiv = document.getElementById('gps-info');
-    statusDiv.innerText = "正在定位中...";
-    statusDiv.className = "";
+  function doClock(type) {
+    const company = document.getElementById('company').value;
+    const dept = document.getElementById('dept').value;
+    if(!company || !dept) { alert("請先填寫公司與部門"); return; }
+    if(currentDist > MAX_DIST) { alert(`距離電廠 ${Math.round(currentDist)}m，無法打卡！`); return; }
 
-    if (!navigator.geolocation) {
-      statusDiv.innerText = "錯誤：您的瀏覽器不支援定位功能";
-      statusDiv.className = "error";
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(position => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      
-      // 計算距離
-      const dist = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
-      gpsDiv.innerText = `目前位置距離電廠：${Math.round(dist)} 公尺`;
-
-      if (dist > ALLOWED_RADIUS) {
-        statusDiv.innerText = `打卡失敗！您不在打卡範圍內 (距離 ${Math.round(dist)}m > 100m)`;
-        statusDiv.className = "error";
-        return;
-      }
-
-      // 送出資料到後端
-      statusDiv.innerText = "定位成功，正在傳送資料...";
-      
-      const payload = {
-        action: "clockIn",
-        name: userInfo.name,
-        company: userInfo.company,
-        dept: userInfo.dept,
-        type: type,
-        lat: lat,
-        lng: lng
-      };
-
-      sendToGAS(payload);
-
-    }, error => {
-      statusDiv.innerText = "定位失敗，請確認手機 GPS 已開啟。";
-      statusDiv.className = "error";
-    }, { enableHighAccuracy: true });
+    updateStatus("資料傳送中...", "");
+    const data = { action: "clockIn", credential: currentUserToken, type: type, company: company, dept: dept, lat: currentLat, lng: currentLng };
+    sendToGAS(data);
   }
 
-  // 4. 計算距離公式 (Haversine Formula)
-  function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
-    var R = 6371000; // 地球半徑 (公尺)
-    var dLat = deg2rad(lat2 - lat1);
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c;
-    return d;
-  }
-
-  function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-  }
-
-  // 5. 送出請假
   function submitLeave() {
-    const type = document.getElementById('leaveType').value;
-    const start = document.getElementById('leaveStart').value;
-    const end = document.getElementById('leaveEnd').value;
-
-    if (!start || !end) { alert("請選擇日期"); return; }
-
-    const payload = {
-      action: "requestLeave",
-      name: userInfo.name,
-      company: userInfo.company,
-      dept: userInfo.dept,
-      type: type,
-      startDate: start,
-      endDate: end
-    };
-    
-    document.getElementById('status').innerText = "傳送假單中...";
-    sendToGAS(payload);
+    const company = document.getElementById('company').value;
+    const dept = document.getElementById('dept').value;
+    updateStatus("傳送中...", "");
+    const data = { action: "requestLeave", credential: currentUserToken, company: company, dept: dept, type: document.getElementById('leaveType').value, startDate: document.getElementById('l-start').value, endDate: document.getElementById('l-end').value };
+    sendToGAS(data);
   }
 
-  // 6. 計算特休
-  function calculateLeave() {
-    const date = document.getElementById('onboardDate').value;
-    if(!date) return;
-    
-    // 這裡我們直接呼叫後端 API 來計算，確保邏輯統一
-    fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "calculateLeave", startDate: date })
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('leaveDays').innerText = data.days;
-    });
+  function calcLeave() {
+     const d = document.getElementById('onboardDate').value;
+     if(!d) return;
+     fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "calculateLeave", startDate: d }) })
+     .then(r => r.json()).then(d => document.getElementById('leaveRes').innerText = d.days);
   }
 
-  // 7. 統一傳送函式
   function sendToGAS(data) {
-    // 使用 fetch API 傳送 JSON
-    fetch(GAS_URL, {
-      redirect: "follow", // 重要：處理 GAS 的重新導向
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8", // 使用 text/plain 避免 CORS preflight
-      },
-    })
-    .then(response => response.json())
-    .then(json => {
-      if (json.success) {
-        document.getElementById('status').innerText = json.message;
-        document.getElementById('status').className = "success";
-        if(json.time) alert(json.message); // 彈出視窗提示打卡成功
-      } else {
-        document.getElementById('status').innerText = "發生錯誤：" + JSON.stringify(json);
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('status').innerText = "連線失敗，請檢查網路。";
-    });
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) })
+    .then(r => r.json())
+    .then(res => updateStatus(res.message, res.success ? "success" : "error"))
+    .catch(e => updateStatus("連線失敗", "error"));
+  }
+
+  function updateStatus(msg, type) {
+    const box = document.getElementById('status-box');
+    box.innerText = msg;
+    box.className = type;
+  }
+
+  function switchTab(t) {
+    document.getElementById('status-box').innerText = "";
+    if(t==='clock'){
+        document.getElementById('tab-clock').classList.remove('hidden');
+        document.getElementById('tab-leave').classList.add('hidden');
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.querySelectorAll('.tab')[1].classList.remove('active');
+    } else {
+        document.getElementById('tab-clock').classList.add('hidden');
+        document.getElementById('tab-leave').classList.remove('hidden');
+        document.querySelectorAll('.tab')[0].classList.remove('active');
+        document.querySelectorAll('.tab')[1].classList.add('active');
+    }
+  }
+
+  function getDist(lat1, lon1, lat2, lon2) {
+    var R = 6371000, dLat = (lat2-lat1)*(Math.PI/180), dLon = (lon2-lon1)*(Math.PI/180);
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 </script>
-
 </body>
 </html>
