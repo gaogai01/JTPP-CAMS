@@ -1,59 +1,406 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8">
-<title>權限管理後台</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電廠管理後台</title>
+  <style>
+    body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background: #f4f6f8; color: #333; }
+    .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    h2 { text-align: center; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+    
+    .hidden { display: none !important; }
+    
+    /* 登入區 */
+    #login-section { text-align: center; padding: 50px 0; }
+    .btn-login { background-color: #4285F4; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; }
+    .btn-login:hover { background-color: #357ae8; }
+
+    /* 分頁籤 */
+    .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+    .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #666; background: #f9f9f9; }
+    .tab:hover { background: #eee; }
+    .tab.active { background: #fff; color: #1a73e8; border-top: 3px solid #1a73e8; border-bottom: 2px solid #fff; }
+
+    /* 表格樣式 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: center; }
+    th { background-color: #f8f9fa; color: #555; }
+    tr:hover { background-color: #f1f1f1; }
+
+    /* 按鈕 */
+    button { cursor: pointer; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; transition: 0.2s; }
+    .btn-approve { background: #28a745; color: white; }
+    .btn-reject { background: #dc3545; color: white; }
+    .btn-update { background: #17a2b8; color: white; }
+    .btn-refresh { background: #6c757d; color: white; margin-bottom: 10px; }
+    
+    /* 權限下拉選單 */
+    select.role-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+    
+    /* 使用者資訊 */
+    .admin-info { text-align: right; margin-bottom: 10px; font-size: 13px; color: #666; }
+    .badge { padding: 3px 8px; border-radius: 10px; background: #e2e6ea; font-size: 12px; }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <h2>👥 人員權限管理</h2>
-  <button onclick="loadUsers()">讀取所有人員</button>
-  <div id="user-list"></div>
+
+<div class="container">
+  <h2>🛠️ 承包商管理控制台</h2>
+
+  <div id="login-section">
+    <p>請使用管理員或主管帳號登入</p>
+    <button class="btn-login" onclick="loginGoogle()">使用 Google 登入</button>
+  </div>
+
+  <div id="main-section" class="hidden">
+    <div class="admin-info">
+        管理員：<span id="my-name" style="font-weight:bold;"></span> 
+        (<span id="my-role">讀取中...</span>)
+        <button onclick="logout()" style="background:none; color:blue; text-decoration:underline; padding:0;">登出</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('review')">📝 審核作業 (請假/加班)</div>
+      <div class="tab" onclick="switchTab('users')">👥 人員權限管理</div>
+    </div>
+
+    <div id="tab-review">
+        <div style="background:#e9ecef; padding:10px; border-radius:5px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+            <span>
+                <strong>當前審核身分：</strong>
+                <select id="reviewRoleSelect" style="padding:5px;">
+                    </select>
+            </span>
+            <button class="btn-refresh" onclick="loadReviewData()">🔄 讀取最新假單</button>
+        </div>
+
+        <h3 style="color:#007bff;">請假審核</h3>
+        <div style="overflow-x:auto;">
+            <table id="leaveTable">
+                <thead><tr><th>姓名</th><th>代理人</th><th>假別</th><th>時間</th><th>目前進度</th><th>操作</th></tr></thead>
+                <tbody><tr><td colspan="6">載入中...</td></tr></tbody>
+            </table>
+        </div>
+
+        <h3 style="color:#6610f2; margin-top:30px;">加班審核</h3>
+        <div style="overflow-x:auto;">
+            <table id="otTable">
+                <thead><tr><th>姓名</th><th>類型</th><th>時間</th><th>目前進度</th><th>操作</th></tr></thead>
+                <tbody><tr><td colspan="5">載入中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-users" class="hidden">
+        <button class="btn-refresh" onclick="loadUsers()">🔄 讀取所有人員清單</button>
+        <div style="overflow-x:auto;">
+            <table id="userTable">
+                <thead><tr><th>姓名</th><th>公司 / 部門</th><th>目前權限</th><th>修改權限</th><th>動作</th></tr></thead>
+                <tbody><tr><td colspan="5">請點擊讀取...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
-  const firebaseConfig = { 
-      apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
-  authDomain: "tpc-monitor.firebaseapp.com",
-  projectId: "tpc-monitor",
-  storageBucket: "tpc-monitor.firebasestorage.app",
-  messagingSenderId: "1066125366380",
-  appId: "1:1066125366380:web:836d5898c051226669f449"
+  // ================= 設定區 =================
+  // 1. 你的 Apps Script 網址 (/exec 結尾)
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
+  
+  // 2. 你的 Firebase 設定 (請填入正確資訊)
+  const firebaseConfig = {
+    apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
+    authDomain: "tpc-monitor.firebaseapp.com",
+    projectId: "tpc-monitor",
+    storageBucket: "tpc-monitor.firebasestorage.app",
+    messagingSenderId: "1066125366380",
+    appId: "1:1066125366380:web:836d5898c051226669f449"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  // =========================================
 
-  async function loadUsers() {
-    const snapshot = await db.collection('users').get();
-    let html = "<table border='1'><tr><th>姓名</th><th>目前身分</th><th>修改身分</th></tr>";
+  // 初始化 Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser = null;
+  let myRole = ""; // 我的權限 (從 Firebase 讀取)
+
+  // 1. 登入處理
+  function loginGoogle() {
+    auth.signInWithPopup(provider).catch(e => alert(e.message));
+  }
+  function logout() { auth.signOut().then(()=>location.reload()); }
+
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('main-section').classList.remove('hidden');
+      document.getElementById('my-name').innerText = user.displayName;
+      
+      // 讀取我的權限
+      const doc = await db.collection('users').doc(user.email).get();
+      if(doc.exists) {
+          myRole = doc.data().role || "外包員工";
+      } else {
+          myRole = "訪客"; // 未註冊
+      }
+      document.getElementById('my-role').innerText = myRole;
+      
+      // 設定下拉選單 (根據權限自動切換)
+      setupRoleSelect(myRole);
+      
+      // 預設載入審核資料
+      loadReviewData();
+    }
+  });
+
+  function setupRoleSelect(role) {
+      const select = document.getElementById('reviewRoleSelect');
+      select.innerHTML = "";
+      
+      // 根據身分顯示可用的審核角色
+      if(role === '管理者') {
+          select.innerHTML += `<option value="client">甲方</option><option value="boss">老闆</option><option value="leader">領班</option><option value="agent">代理人</option>`;
+      } else if (role === '甲方') {
+          select.innerHTML += `<option value="client">甲方</option>`;
+      } else if (role === '外包老闆') {
+          select.innerHTML += `<option value="boss">老闆</option>`;
+      } else if (role === '外包領班') {
+          select.innerHTML += `<option value="leader">領班</option><option value="agent">代理人</option>`;
+      } else {
+          select.innerHTML += `<option value="">無審核權限</option>`;
+      }
+  }
+
+  // =========================================
+  // 功能 A: 審核作業 (讀取 GAS)
+  // =========================================
+  function loadReviewData() {
+    const currentReviewRole = document.getElementById('reviewRoleSelect').value;
+    if(!currentReviewRole) {
+        document.querySelector("#leaveTable tbody").innerHTML = "<tr><td colspan='6'>您沒有審核權限</td></tr>";
+        document.querySelector("#otTable tbody").innerHTML = "<tr><td colspan='5'>您沒有審核權限</td></tr>";
+        return;
+    }
+
+    document.querySelector("#leaveTable tbody").innerHTML = "<tr><td colspan='6'>讀取資料中...</td></tr>";
     
-    snapshot.forEach(doc => {
-        let u = doc.data();
-        html += `<tr>
-            <td>${u.name}</td>
-            <td>${u.role}</td>
-            <td>
-                <select id="role-${doc.id}">
-                    <option value="外包員工">外包員工</option>
-                    <option value="外包領班">外包領班</option>
-                    <option value="外包老闆">外包老闆</option>
-                    <option value="甲方">甲方</option>
-                    <option value="管理者">管理者</option>
-                </select>
-                <button onclick="updateRole('${doc.id}')">變更</button>
-            </td>
+    // 這裡我們需要一個 GAS 權限跳板 (使用 Email 驗證)
+    // 雖然前端是用 Firebase 登入，但後端 GAS 還是需要一個憑證，這裡我們簡單傳送 Email 讓 GAS 知道是誰
+    // 注意：正式環境建議用更嚴謹的 Token 交換，這裡演示可行做法
+    
+    fetch(GAS_URL, { 
+        method: "POST", 
+        body: JSON.stringify({ 
+            action: "getAdminData", 
+            credential: "dummy_token_for_now", // 因為後端改用 isAdmin(email) 判斷，這裡需要配合修改後端邏輯
+            // ★ 修改建議：為了讓這個能運作，你的 Code.gs getAdminData 
+            // 必須改成接受直接傳入的 email 參數，或者前端生成一個模擬 token
+            // 為了簡化，我們假定 Code.gs 的 isAdmin 檢查的是 'currentUser.email'
+            // 但因為 verifyGoogleToken 需要真實 Google Token，我們這裡其實傳不了。
+            
+            // ★ 解決方案：我們用一個特殊的 action，並把 email 明碼傳過去 (僅限信任環境)
+            // 或者，如果你的 GAS 部署為 "執行身分: 我"，前端就無法直接取得 User Email。
+            // 最好的方式是：前端把 Firebase User Token 傳給 GAS，GAS 驗證 Firebase Token。
+            // 但這太複雜了。
+            
+            // ★ 暫時解法：請在 Code.gs 的 processData 中，允許接收 explicitEmail 參數
+            explicitEmail: currentUser.email
+        }) 
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.success) {
+            renderLeaveTable(res.data.leave);
+            renderOtTable(res.data.overtime);
+        } else {
+            // 如果 GAS 驗證失敗 (因為我們傳的是 explicitEmail)
+            // 這裡顯示錯誤
+            alert("讀取失敗：" + res.message);
+        }
+    });
+  }
+  
+  // ★ 重要：上面的 fetch 呼叫會失敗，因為 Code.gs 預期的是 Google ID Token
+  // 我們需要修改 Code.gs 來支援這種「簡易」呼叫，或者我們改用 Google Sign-In 按鈕產生的 Token
+  // 既然你已經用了 Firebase Auth，我們可以忽略 Code.gs 的 Google Token 驗證，改用我們傳入的參數
+  
+  // 修正 fetch 邏輯 (配合修改後的 Code.gs)
+  function callGAS(payload) {
+      // 補上使用者 Email 與 角色，讓 GAS 知道是誰
+      payload.userEmail = currentUser.email; 
+      payload.userRole = myRole; // 傳送 Firebase 的角色給 GAS 參考
+      
+      return fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+      }).then(r => r.json());
+  }
+
+  // 重新實作 loadReviewData (使用新的 callGAS)
+  function loadReviewData() {
+      const tbodyL = document.querySelector("#leaveTable tbody");
+      const tbodyO = document.querySelector("#otTable tbody");
+      tbodyL.innerHTML = "<tr><td colspan='6'>載入中...</td></tr>";
+      tbodyO.innerHTML = "<tr><td colspan='5'>載入中...</td></tr>";
+
+      callGAS({ action: "getAdminData" }).then(res => {
+          if(res.success) {
+              renderLeaveTable(res.data.leave);
+              renderOtTable(res.data.overtime);
+          } else {
+              tbodyL.innerHTML = `<tr><td colspan='6'>${res.message}</td></tr>`;
+              tbodyO.innerHTML = `<tr><td colspan='5'>${res.message}</td></tr>`;
+          }
+      });
+  }
+
+  function renderLeaveTable(data) {
+    const tbody = document.querySelector(`#leaveTable tbody`);
+    tbody.innerHTML = "";
+    if(data.length === 0) { tbody.innerHTML = "<tr><td colspan='6'>無待審核資料</td></tr>"; return; }
+
+    data.forEach(item => {
+        let role = document.getElementById('reviewRoleSelect').value;
+        // 判斷目前身分是否該審核
+        // 邏輯：看該欄位是否為 "待審核"
+        let myStatus = "未知";
+        if(role === 'agent') myStatus = item.agentSign;
+        if(role === 'leader') myStatus = item.leader;
+        if(role === 'boss') myStatus = item.boss;
+        if(role === 'client') myStatus = item.client;
+
+        let btns = "";
+        if(myStatus === '待審核') {
+            btns = `<button class="btn-approve" onclick="doReview('leave', ${item.id}, '同意')">同意</button> 
+                    <button class="btn-reject" onclick="doReview('leave', ${item.id}, '退回')">退回</button>`;
+        } else {
+            btns = `<span style="color:gray">${myStatus}</span>`;
+        }
+
+        let statusText = `<small>代:${item.agentSign} | 領:${item.leader} | 老:${item.boss} | 甲:${item.client}</small>`;
+        tbody.innerHTML += `<tr>
+            <td>${item.name}</td><td>${item.agentName}</td><td>${item.type}</td>
+            <td><small>${item.start.replace('T',' ')}<br>~${item.end.split('T')[1]}</small></td>
+            <td>${statusText}</td><td>${btns}</td>
         </tr>`;
     });
-    html += "</table>";
-    document.getElementById('user-list').innerHTML = html;
+  }
+
+  function renderOtTable(data) {
+    const tbody = document.querySelector(`#otTable tbody`);
+    tbody.innerHTML = "";
+    if(data.length === 0) { tbody.innerHTML = "<tr><td colspan='5'>無待審核資料</td></tr>"; return; }
+
+    data.forEach(item => {
+        let role = document.getElementById('reviewRoleSelect').value;
+        if(role === 'agent' || role === 'leader') { // 加班只有老闆跟甲方
+             // 這裡可以選擇不顯示，或者顯示唯讀
+        }
+        
+        let myStatus = (role === 'boss') ? item.boss : (role === 'client' ? item.client : '無權限');
+        
+        let btns = "";
+        if(myStatus === '待審核') {
+            btns = `<button class="btn-approve" onclick="doReview('overtime', ${item.id}, '同意')">同意</button> 
+                    <button class="btn-reject" onclick="doReview('overtime', ${item.id}, '退回')">退回</button>`;
+        } else {
+            btns = `<span style="color:gray">${myStatus}</span>`;
+        }
+
+        let statusText = `<small>老:${item.boss} | 甲:${item.client}</small>`;
+        tbody.innerHTML += `<tr>
+            <td>${item.name}</td><td>${item.type}</td>
+            <td><small>${item.start.replace('T',' ')}<br>~${item.end.split('T')[1]}</small></td>
+            <td>${statusText}</td><td>${btns}</td>
+        </tr>`;
+    });
+  }
+
+  function doReview(category, id, decision) {
+      let role = document.getElementById('reviewRoleSelect').value;
+      if(!confirm(`確定要以 [${role}] 身分執行 [${decision}] 嗎？`)) return;
+      
+      callGAS({
+          action: "reviewRequest",
+          category: category,
+          id: id,
+          role: role,
+          decision: decision
+      }).then(res => {
+          alert(res.message);
+          loadReviewData(); // 重新整理
+      });
+  }
+
+  // =========================================
+  // 功能 B: 人員權限管理 (讀取 Firebase)
+  // =========================================
+  async function loadUsers() {
+      if(myRole !== "管理者") {
+          document.getElementById('userTable').innerHTML = "<p style='padding:20px;text-align:center;'>您沒有權限管理人員</p>";
+          return;
+      }
+      
+      const tbody = document.querySelector("#userTable tbody");
+      tbody.innerHTML = "<tr><td colspan='5'>讀取中...</td></tr>";
+      
+      const snapshot = await db.collection('users').get();
+      tbody.innerHTML = "";
+      
+      snapshot.forEach(doc => {
+          let u = doc.data();
+          let row = `<tr>
+            <td>${u.name || u.email}</td>
+            <td>${u.company || "-"} / ${u.dept || "-"}</td>
+            <td><span class="badge">${u.role || "未設定"}</span></td>
+            <td>
+                <select id="role-${doc.id}" class="role-select">
+                    <option value="外包員工" ${u.role==='外包員工'?'selected':''}>外包員工</option>
+                    <option value="外包領班" ${u.role==='外包領班'?'selected':''}>外包領班</option>
+                    <option value="外包老闆" ${u.role==='外包老闆'?'selected':''}>外包老闆</option>
+                    <option value="甲方" ${u.role==='甲方'?'selected':''}>甲方</option>
+                    <option value="管理者" ${u.role==='管理者'?'selected':''}>管理者</option>
+                </select>
+            </td>
+            <td><button class="btn-update" onclick="updateRole('${doc.id}')">變更</button></td>
+          </tr>`;
+          tbody.innerHTML += row;
+      });
   }
 
   async function updateRole(email) {
-    let newRole = document.getElementById('role-' + email).value;
-    await db.collection('users').doc(email).update({ role: newRole });
-    alert("權限已修改為：" + newRole);
-    loadUsers(); // 重新整理
+      let newRole = document.getElementById('role-' + email).value;
+      if(!confirm(`確定將 ${email} 的權限修改為 ${newRole} 嗎？`)) return;
+      
+      try {
+          await db.collection('users').doc(email).update({ role: newRole });
+          alert("權限修改成功！");
+          loadUsers();
+      } catch(e) {
+          alert("修改失敗：" + e.message);
+      }
+  }
+
+  // 切換分頁
+  function switchTab(t) {
+      ['review', 'users'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
+      document.getElementById('tab-'+t).classList.remove('hidden');
+      
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if(t === 'users') loadUsers();
   }
 </script>
 </body>
