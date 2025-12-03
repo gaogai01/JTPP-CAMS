@@ -1,71 +1,53 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-  </head>
+<meta charset="utf-8">
+<title>權限管理後台</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
 <body>
-<div class="container">
-  <h2>📋 後台管理</h2>
-  <div id="login-section" style="text-align:center;">
-    <p>管理員登入</p>
-    <div id="g_id_onload" data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
-    <div class="g_id_signin" data-type="standard"></div>
-  </div>
-
-  <div id="admin-panel" class="hidden">
-    <div class="role-select">
-        <label>身分切換：</label>
-        <select id="currentRole" onchange="loadData()">
-            <option value="agent">代理人 (僅請假)</option>
-            <option value="leader">領班 (僅請假)</option>
-            <option value="boss">老闆</option>
-            <option value="client" selected>甲方(電廠)</option>
-        </select>
-        <button onclick="loadData()">🔄 刷新</button>
-    </div>
-
-    <h3>請假審核</h3>
-    <table id="leaveTable">
-        <thead><tr><th>姓名</th><th>假別</th><th>時間</th><th>進度</th><th>操作</th></tr></thead>
-        <tbody></tbody>
-    </table>
-
-    <h3 style="margin-top:40px;">加班審核 (免代理/領班)</h3>
-    <table id="otTable">
-        <thead><tr><th>姓名</th><th>類型</th><th>時間</th><th>進度</th><th>操作</th></tr></thead>
-        <tbody></tbody>
-    </table>
-  </div>
-</div>
+  <h2>👥 人員權限管理</h2>
+  <button onclick="loadUsers()">讀取所有人員</button>
+  <div id="user-list"></div>
 
 <script>
-  // ... GAS_URL 與 handleCredentialResponse, loadData, renderLeaveTable 維持不變 ...
-  
-  // 只需修改加班表格的渲染邏輯 renderOtTable
-  function renderOtTable(data) {
-    const tbody = document.querySelector(`#otTable tbody`);
-    tbody.innerHTML = "";
-    data.forEach(item => {
-        let role = document.getElementById('currentRole').value;
-        // 加班只有 Boss 和 Client 能審
-        if(role === 'agent' || role === 'leader') {
-            tbody.innerHTML = "<tr><td colspan='5'>此身分無需審核加班</td></tr>";
-            return;
-        }
+  const firebaseConfig = { /* 你的設定 */ };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-        let myStatus = role === 'boss' ? item.boss : item.client;
-        
-        let btns = myStatus === '待審核' ? 
-            `<button class="btn-approve" onclick="review('overtime', ${item.id}, '同意')">同意</button>
-             <button class="btn-reject" onclick="review('overtime', ${item.id}, '退回')">退回</button>` : `<span>${myStatus}</span>`;
-
-        let statusText = `<small>老:${item.boss} 甲:${item.client}</small>`;
-        tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.type}</td>
-            <td><small>${item.start.replace('T',' ')}<br>~${item.end.split('T')[1]}</small></td>
-            <td>${statusText}</td><td>${btns}</td></tr>`;
+  async function loadUsers() {
+    const snapshot = await db.collection('users').get();
+    let html = "<table border='1'><tr><th>姓名</th><th>目前身分</th><th>修改身分</th></tr>";
+    
+    snapshot.forEach(doc => {
+        let u = doc.data();
+        html += `<tr>
+            <td>${u.name}</td>
+            <td>${u.role}</td>
+            <td>
+                <select id="role-${doc.id}">
+                    <option value="外包員工">外包員工</option>
+                    <option value="外包領班">外包領班</option>
+                    <option value="外包老闆">外包老闆</option>
+                    <option value="甲方">甲方</option>
+                    <option value="管理者">管理者</option>
+                </select>
+                <button onclick="updateRole('${doc.id}')">變更</button>
+            </td>
+        </tr>`;
     });
+    html += "</table>";
+    document.getElementById('user-list').innerHTML = html;
   }
 
-  // ... review 函式維持不變 ...
+  async function updateRole(email) {
+    let newRole = document.getElementById('role-' + email).value;
+    await db.collection('users').doc(email).update({ role: newRole });
+    alert("權限已修改為：" + newRole);
+    loadUsers(); // 重新整理
+  }
 </script>
 </body>
 </html>
