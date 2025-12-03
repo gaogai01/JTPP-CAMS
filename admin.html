@@ -25,7 +25,7 @@
 <body>
 
 <div class="container">
-  <h2>🛠️ 管理控制台</h2>
+  <h2>🛠️ 管理控制台 (JTPP-CAMS)</h2>
   <div id="login-section" style="text-align:center; padding:50px;">
     <button onclick="loginGoogle()" style="padding:10px 20px;">Google 登入</button>
   </div>
@@ -59,14 +59,15 @@
 </div>
 
 <script>
-  // ★★★ 請在這裡填入你的 Firebase Config ★★★
+  // ★★★ JTPP-CAMS Firebase Config ★★★
   const firebaseConfig = {
-    apiKey: "你的_API_KEY",
-    authDomain: "你的_PROJECT_ID.firebaseapp.com",
-    projectId: "你的_PROJECT_ID",
-    storageBucket: "你的_PROJECT_ID.firebasestorage.app",
-    messagingSenderId: "你的_SENDER_ID",
-    appId: "你的_APP_ID"
+    apiKey: "AIzaSyAQPANPPx5A3FtpISPcfX-kHPtG0PC6irA",
+    authDomain: "jtpp-cams.firebaseapp.com",
+    projectId: "jtpp-cams",
+    storageBucket: "jtpp-cams.firebasestorage.app",
+    messagingSenderId: "334286192470",
+    appId: "1:334286192470:web:9080eb43436b3a3fdfe0f7",
+    measurementId: "G-LDV2MZFY26"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -114,7 +115,6 @@
 
     if(!role) { tL.innerHTML=""; tO.innerHTML=""; return; }
 
-    // ★★★ 視角過濾 ★★★
     let query = db.collection('cams_applications').orderBy('createdAt', 'desc').limit(50);
     
     if (myRole === '外包老闆' || myRole === '外包領班') {
@@ -122,7 +122,6 @@
     } else if (myRole === '甲方') {
         query = query.where('dept', '==', myDept);
     }
-    // ★★★★★★★★★★★
 
     const snapshot = await query.get();
     tL.innerHTML = ""; tO.innerHTML = "";
