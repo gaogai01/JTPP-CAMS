@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>尖山電廠系統 (Firebase版)</title>
+  <title>尖山電廠系統 (員工端)</title>
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
     .container { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
     .hidden { display: none !important; }
+    
     input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; margin-top: 10px; }
+    
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; }
     
-    .btn-in { background-color: #1a73e8; } .btn-out { background-color: #d93025; }
-    .btn-leave { background-color: #f9ab00; color: black; } .btn-ot { background-color: #6f42c1; }
+    .btn-in { background-color: #1a73e8; } 
+    .btn-out { background-color: #d93025; }
+    .btn-leave { background-color: #f9ab00; color: black; }
+    .btn-ot { background-color: #6f42c1; }
     .btn-edit { background-color: #6c757d; font-size: 12px; padding: 5px 10px; width: auto; margin-left: 10px; }
     
     #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
@@ -27,6 +31,7 @@
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
+    
     .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
     .badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; background: #eee; }
   </style>
@@ -60,7 +65,7 @@
         <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
-        <label>到職日</label><input type="date" id="onboardDate">
+        <label>到職日 (特休計算用)</label><input type="date" id="onboardDate">
         <button class="btn-in" onclick="saveToFirebase()">儲存資料</button>
     </div>
 
@@ -86,7 +91,7 @@
             特休試算：<b id="leave-days" style="color:blue">0</b> 天
         </div>
         <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
-        <label>代理人姓名</label><input type="text" id="agentName">
+        <label>職務代理人</label><input type="text" id="agentName" placeholder="請輸入同公司代理人姓名">
         <label>開始</label><input type="datetime-local" id="l-start" step="1800">
         <label>結束</label><input type="datetime-local" id="l-end" step="1800">
         <button class="btn-leave" onclick="submitApp('leave')">送出假單</button>
@@ -109,14 +114,14 @@
 </div>
 
 <script>
-  // ★★★ 請在這裡貼上你的 Firebase Config ★★★
+  // ★★★ 請在這裡填入你的 Firebase Config ★★★
   const firebaseConfig = {
-    apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
-    authDomain: "tpc-monitor.firebaseapp.com",
-    projectId: "tpc-monitor",
-    storageBucket: "tpc-monitor.firebasestorage.app",
-    messagingSenderId: "1066125366380",
-    appId: "1:1066125366380:web:836d5898c051226669f449"
+    apiKey: "你的_API_KEY",
+    authDomain: "你的_PROJECT_ID.firebaseapp.com",
+    projectId: "你的_PROJECT_ID",
+    storageBucket: "你的_PROJECT_ID.firebasestorage.app",
+    messagingSenderId: "你的_SENDER_ID",
+    appId: "你的_APP_ID"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -124,14 +129,13 @@
   const db = firebase.firestore();
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // 設定
+  // 設定：電廠座標
   const TARGET_LAT = 23.564675316036272;
   const TARGET_LNG = 119.66034190357468;
   const MAX_DIST = 100;
 
   let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
 
-  // 1. 登入
   function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
 
   auth.onAuthStateChanged(async (user) => {
@@ -140,14 +144,12 @@
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
       document.getElementById('u-photo').src = user.photoURL;
-      
       setDefaultTimes();
       await loadUserData(user);
       startGPS();
     }
   });
 
-  // 2. 讀取使用者資料 (cams_users)
   async function loadUserData(user) {
     const doc = await db.collection('cams_users').doc(user.email).get();
     if (doc.exists) {
@@ -155,11 +157,7 @@
         updateUI(userData);
         loadHistory();
     } else {
-        // 新使用者預設建立
-        userData = {
-            name: user.displayName, email: user.email, role: "外包員工", 
-            company: "", dept: "", jobTitle: "", onboardDate: "", createdAt: new Date().toISOString()
-        };
+        userData = { name: user.displayName, email: user.email, role: "外包員工", company: "", dept: "", jobTitle: "", onboardDate: "", createdAt: new Date().toISOString() };
         await db.collection('cams_users').doc(user.email).set(userData);
         updateUI(userData);
         document.getElementById('meta-form').classList.remove('hidden');
@@ -190,14 +188,12 @@
     userData = { ...userData, ...newData };
     updateUI(userData);
     document.getElementById('meta-form').classList.add('hidden');
-    alert("已儲存！");
+    alert("資料已更新");
   }
 
-  // 3. 打卡 (寫入 cams_records)
   async function doClock(type) {
     if (!userData.company) { alert("請先填寫資料"); return; }
     if (currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
-
     try {
         const now = new Date();
         let status = "正常";
@@ -207,51 +203,29 @@
 
         await db.collection('cams_records').add({
             userId: currentUser.email,
-            name: userData.name,
-            email: currentUser.email,
-            company: userData.company,
-            dept: userData.dept,
-            type: type,
-            time: now,
-            lat: currentLat,
-            lng: currentLng,
-            status: status
+            name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
+            type: type, time: now, lat: currentLat, lng: currentLng, status: status
         });
         alert(`打卡成功！(${status})`);
         loadHistory();
     } catch (e) { alert("打卡失敗: " + e.message); }
   }
 
-// 4. 修改 index.html 中的 submitApp 函式
-async function submitApp(cat) {
-    if (!userData.company) { alert("請先填寫基本資料"); return; }
+  async function submitApp(cat) {
+    if (!userData.company) { alert("請先填寫資料"); return; }
     
-    // ★★★ 新增：代理人檢查邏輯 ★★★
+    // 代理人檢查
     let agentName = "";
     if (cat === 'leave') {
         agentName = document.getElementById('agentName').value.trim();
         if (!agentName) { alert("請輸入代理人姓名"); return; }
-        
-        // 檢查代理人是否存在且為同一家公司
-        const agentSnap = await db.collection('cams_users')
-            .where('name', '==', agentName)
-            .where('company', '==', userData.company) // 關鍵：限制同一公司
-            .get();
-
-        if (agentSnap.empty) {
-            alert(`找不到「${agentName}」，或該員非本公司員工，無法設為代理人。`);
-            return;
-        }
+        const agentSnap = await db.collection('cams_users').where('name', '==', agentName).where('company', '==', userData.company).get();
+        if (agentSnap.empty) { alert(`找不到「${agentName}」或非本公司員工，無法設為代理人。`); return; }
     }
-    // ★★★ 結束檢查 ★★★
 
     try {
         let payload = {
-            userId: currentUser.email,
-            name: userData.name,
-            email: currentUser.email,
-            company: userData.company,
-            dept: userData.dept,
+            userId: currentUser.email, name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
             category: cat,
             startDate: document.getElementById(cat==='leave'?'l-start':'ot-start').value,
             endDate: document.getElementById(cat==='leave'?'l-end':'ot-end').value,
@@ -261,9 +235,11 @@ async function submitApp(cat) {
         if(cat === 'leave') {
             payload.type = document.getElementById('leaveType').value;
             payload.agentName = agentName;
+            // 請假：四層簽核
             payload.status = { agent: "待審核", leader: "待審核", boss: "待審核", client: "待審核" };
         } else {
             payload.type = document.getElementById('otType').value;
+            // 加班：兩層簽核 (無代理、無領班)
             payload.status = { boss: "待審核", client: "待審核" };
         }
 
@@ -271,19 +247,14 @@ async function submitApp(cat) {
         alert("申請已送出！");
         loadHistory();
     } catch (e) { alert("失敗: " + e.message); }
-}
+  }
 
-  // 5. 歷史紀錄
   async function loadHistory() {
     const list = document.getElementById('history-list');
     list.innerHTML = "<p style='text-align:center'>載入中...</p>";
     let html = "";
 
-    // 讀打卡
-    const snap1 = await db.collection('cams_records')
-        .where('userId', '==', currentUser.email)
-        .orderBy('time', 'desc').limit(5).get();
-    
+    const snap1 = await db.collection('cams_records').where('userId', '==', currentUser.email).orderBy('time', 'desc').limit(5).get();
     if(!snap1.empty) {
         html += `<p style="color:#666;border-bottom:1px solid #ddd">最近打卡</p>`;
         snap1.forEach(doc => {
@@ -293,11 +264,7 @@ async function submitApp(cat) {
         });
     }
 
-    // 讀申請
-    const snap2 = await db.collection('cams_applications')
-        .where('userId', '==', currentUser.email)
-        .orderBy('createdAt', 'desc').limit(5).get();
-
+    const snap2 = await db.collection('cams_applications').where('userId', '==', currentUser.email).orderBy('createdAt', 'desc').limit(5).get();
     if(!snap2.empty) {
         html += `<p style="color:#666;border-bottom:1px solid #ddd;margin-top:15px;">申請紀錄</p>`;
         snap2.forEach(doc => {
@@ -305,7 +272,6 @@ async function submitApp(cat) {
             let s = d.status;
             let statusText = "處理中";
             
-            // 狀態判斷邏輯
             if(d.category === 'leave') {
                 if(s.client==='同意') statusText="✅ 甲方已核准";
                 else if(s.boss==='待審核') statusText="⏳ 等老闆";
@@ -323,21 +289,17 @@ async function submitApp(cat) {
     list.innerHTML = html || "<p style='text-align:center'>無紀錄</p>";
   }
 
-  // 工具
   function setDefaultTimes() {
     const now = new Date();
     const ymd = now.toISOString().split('T')[0];
-    document.getElementById('l-start').value = ymd + "T08:00";
-    document.getElementById('l-end').value = ymd + "T16:30";
-    document.getElementById('ot-start').value = ymd + "T08:00";
-    document.getElementById('ot-end').value = ymd + "T16:30";
+    document.getElementById('l-start').value = ymd + "T08:00"; document.getElementById('l-end').value = ymd + "T16:30";
+    document.getElementById('ot-start').value = ymd + "T08:00"; document.getElementById('ot-end').value = ymd + "T16:30";
   }
   function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
   function switchTab(t) {
     ['clock','leave','overtime','history'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
     document.getElementById('tab-'+t).classList.remove('hidden');
-    document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
-    event.target.classList.add('active');
+    document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); event.target.classList.add('active');
     if(t==='history') loadHistory();
   }
   function startGPS() {
@@ -356,8 +318,8 @@ async function submitApp(cat) {
       if(!dateStr) return 0;
       let start = new Date(dateStr); let now = new Date();
       let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-      if(months < 6) return 0; if(months < 12) return 3; if(months < 24) return 7;
-      if(months < 36) return 10; if(months < 60) return 14; if(months < 120) return 15;
+      if(months < 6) return 0; if(months < 12) return 3; if(months < 24) return 7; if(months < 36) return 10;
+      if(months < 60) return 14; if(months < 120) return 15;
       let days = 16 + Math.floor((months - 120) / 12); return days > 30 ? 30 : days;
   }
 </script>
