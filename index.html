@@ -11,24 +11,24 @@
     .hidden { display: none !important; }
     input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; margin-top: 10px; }
-    button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; }
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; }
     
-    .btn-in { background-color: #1a73e8; } 
-    .btn-out { background-color: #d93025; }
-    .btn-ot { background-color: #6f42c1; }
+    .btn-in { background-color: #1a73e8; } .btn-out { background-color: #d93025; }
+    .btn-leave { background-color: #f9ab00; color: black; } .btn-ot { background-color: #6f42c1; }
     .btn-edit { background-color: #6c757d; font-size: 12px; padding: 5px 10px; width: auto; margin-left: 10px; }
     
     #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
     #user-info img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 2px solid white; }
     .user-details { flex-grow: 1; }
     .user-name { font-weight: bold; font-size: 16px; color: #1f1f1f; }
-    .user-role { font-size: 12px; background: #007bff; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+    .user-meta { font-size: 13px; color: #666; margin-top: 2px; }
     
-    #status-box { text-align: center; padding: 10px; margin-top: 15px; border-radius: 5px; font-weight: bold; }
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
+    .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; background: #eee; }
   </style>
   
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -40,7 +40,7 @@
 <div class="container">
   <h2>⚡ 尖山電廠系統</h2>
 
-  <div id="login-section" style="text-align:center;">
+  <div id="login-section" style="text-align:center; padding: 40px 0;">
     <p>請使用 Google 帳號登入</p>
     <button class="btn-in" onclick="loginGoogle()">🔵 Google 登入</button>
   </div>
@@ -49,8 +49,8 @@
     <div id="user-info">
       <img id="u-photo" src="" alt="">
       <div class="user-details">
-        <div class="user-name"><span id="u-name">...</span> <span id="u-role" class="user-role">...</span></div>
-        <div class="user-meta" id="u-company-display">讀取中...</div>
+        <div class="user-name" id="u-name">...</div>
+        <div class="user-meta" id="u-company-display">讀取資料中...</div>
       </div>
       <button class="btn-edit" onclick="toggleEditMode()">修改</button>
     </div>
@@ -60,6 +60,7 @@
         <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
+        <label>到職日</label><input type="date" id="onboardDate">
         <button class="btn-in" onclick="saveToFirebase()">儲存資料</button>
     </div>
 
@@ -67,42 +68,48 @@
       <div class="tab active" onclick="switchTab('clock')">打卡</div>
       <div class="tab" onclick="switchTab('leave')">請假</div>
       <div class="tab" onclick="switchTab('overtime')">加班</div>
+      <div class="tab" onclick="switchTab('history')">紀錄</div>
     </div>
 
     <div id="tab-clock">
-        <p style="text-align:center; color:#555; margin-bottom:10px;">📍 GPS: <span id="dist-display">偵測中...</span></p>
+        <p style="text-align:center; color:#555; margin-bottom:10px;">📍 GPS: <span id="dist-display" style="color:blue">定位中...</span></p>
         <div class="btn-grid">
-            <button class="btn-in" onclick="doClock('上班')">上班打卡</button>
-            <button class="btn-leave" onclick="doClock('外出')">請假/外出</button>
-            <button class="btn-back" onclick="doClock('返回')">銷假/返回</button>
-            <button class="btn-out" onclick="doClock('下班')">下班打卡</button>
+            <button class="btn-in" onclick="doClock('上班')">上班打卡<br><small>(08:00前)</small></button>
+            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><small>(紀錄)</small></button>
+            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><small>(紀錄)</small></button>
+            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>(16:30後)</small></button>
         </div>
     </div>
 
     <div id="tab-leave" class="hidden">
+        <div style="background:#fff3cd; padding:10px; border-radius:5px; margin-bottom:10px; font-size:13px;">
+            特休試算：<b id="leave-days" style="color:blue">0</b> 天
+        </div>
         <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
-        <label>代理人</label><input type="text" id="agentName" placeholder="代理人姓名">
-        <label>開始</label><input type="datetime-local" id="l-start">
-        <label>結束</label><input type="datetime-local" id="l-end">
-        <button class="btn-out" onclick="submitLeave()">送出假單</button>
+        <label>代理人姓名</label><input type="text" id="agentName">
+        <label>開始</label><input type="datetime-local" id="l-start" step="1800">
+        <label>結束</label><input type="datetime-local" id="l-end" step="1800">
+        <button class="btn-leave" onclick="submitApp('leave')">送出假單</button>
     </div>
 
     <div id="tab-overtime" class="hidden">
         <label>方式</label><select id="otType"><option>申請加班費</option><option>申請補休</option></select>
-        <label>開始</label><input type="datetime-local" id="ot-start">
-        <label>結束</label><input type="datetime-local" id="ot-end">
-        <button class="btn-ot" onclick="submitOvertime()">送出加班申請</button>
+        <label>開始</label><input type="datetime-local" id="ot-start" step="1800">
+        <label>結束</label><input type="datetime-local" id="ot-end" step="1800">
+        <button class="btn-ot" onclick="submitApp('overtime')">送出加班申請</button>
     </div>
 
+    <div id="tab-history" class="hidden">
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin-bottom:10px;">🔄 重新整理</button>
+        <div id="history-list"></div>
+    </div>
+    
     <div id="status-box"></div>
   </div>
 </div>
 
 <script>
-  // ★★★ 設定區 ★★★
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
-  
-  // 你的 Firebase 設定 (請直接複製你之前提供的那個)
+  // ★★★ 請在這裡貼上你的 Firebase Config ★★★
   const firebaseConfig = {
     apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
     authDomain: "tpc-monitor.firebaseapp.com",
@@ -117,15 +124,16 @@
   const db = firebase.firestore();
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  let currentUser = null;
-  let userData = {}; // 存 Firestore 資料
-  
-  // 1. 登入邏輯
-  function loginGoogle() {
-    auth.signInWithPopup(provider).catch(e => alert(e.message));
-  }
+  // 設定
+  const TARGET_LAT = 23.564675316036272;
+  const TARGET_LNG = 119.66034190357468;
+  const MAX_DIST = 100;
 
-  // 監聽登入狀態
+  let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
+
+  // 1. 登入
+  function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
+
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       currentUser = user;
@@ -133,139 +141,206 @@
       document.getElementById('main-section').classList.remove('hidden');
       document.getElementById('u-photo').src = user.photoURL;
       
-      await loadUserData(user); // 從 Firebase 讀取資料
+      setDefaultTimes();
+      await loadUserData(user);
       startGPS();
     }
   });
 
-  // 2. 讀取/建立 使用者資料 (Firestore)
+  // 2. 讀取使用者資料 (cams_users)
   async function loadUserData(user) {
-    const userRef = db.collection('users').doc(user.email); // 用 Email 當 ID
-    const doc = await userRef.get();
-
+    const doc = await db.collection('cams_users').doc(user.email).get();
     if (doc.exists) {
-        // 老鳥：讀取資料
         userData = doc.data();
         updateUI(userData);
+        loadHistory();
     } else {
-        // 新人：建立預設資料
+        // 新使用者預設建立
         userData = {
-            name: user.displayName,
-            email: user.email,
-            role: "外包員工", // 預設身分
-            company: "",
-            dept: "",
-            jobTitle: "",
-            createdAt: new Date().toISOString()
+            name: user.displayName, email: user.email, role: "外包員工", 
+            company: "", dept: "", jobTitle: "", onboardDate: "", createdAt: new Date().toISOString()
         };
-        await userRef.set(userData);
+        await db.collection('cams_users').doc(user.email).set(userData);
         updateUI(userData);
-        alert("歡迎新用戶，請先填寫基本資料！");
         document.getElementById('meta-form').classList.remove('hidden');
     }
   }
 
   function updateUI(data) {
     document.getElementById('u-name').innerText = data.name;
-    document.getElementById('u-role').innerText = data.role;
     document.getElementById('u-company-display').innerText = (data.company || "未設定") + " / " + (data.dept || "未設定");
-    
-    // 填入表單
     document.getElementById('dbName').value = data.name;
+    document.getElementById('jobTitle').value = data.jobTitle || "";
     document.getElementById('company').value = data.company || "";
     document.getElementById('dept').value = data.dept || "";
-    document.getElementById('jobTitle').value = data.jobTitle || "";
+    document.getElementById('onboardDate').value = data.onboardDate || "";
+    if(data.onboardDate) document.getElementById('leave-days').innerText = calculateLeave(data.onboardDate);
   }
 
-  // 3. 修改並儲存資料 (寫入 Firebase)
   async function saveToFirebase() {
     const newData = {
         name: document.getElementById('dbName').value,
+        jobTitle: document.getElementById('jobTitle').value,
         company: document.getElementById('company').value,
         dept: document.getElementById('dept').value,
-        jobTitle: document.getElementById('jobTitle').value
+        onboardDate: document.getElementById('onboardDate').value
     };
-    
+    if(!newData.name || !newData.company) { alert("請填寫姓名與公司"); return; }
+    await db.collection('cams_users').doc(currentUser.email).update(newData);
+    userData = { ...userData, ...newData };
+    updateUI(userData);
+    document.getElementById('meta-form').classList.add('hidden');
+    alert("已儲存！");
+  }
+
+  // 3. 打卡 (寫入 cams_records)
+  async function doClock(type) {
+    if (!userData.company) { alert("請先填寫資料"); return; }
+    if (currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
+
     try {
-        await db.collection('users').doc(currentUser.email).update(newData);
-        userData = { ...userData, ...newData }; // 更新本地變數
-        updateUI(userData);
-        document.getElementById('meta-form').classList.add('hidden');
-        alert("資料已更新！");
-    } catch (e) {
-        alert("更新失敗：" + e.message);
+        const now = new Date();
+        let status = "正常";
+        let h = now.getHours(), m = now.getMinutes();
+        if(type==="上班" && (h>8 || (h===8 && m>0))) status="遲到";
+        if(type==="下班" && (h<16 || (h===16 && m<30))) status="早退";
+
+        await db.collection('cams_records').add({
+            userId: currentUser.email,
+            name: userData.name,
+            email: currentUser.email,
+            company: userData.company,
+            dept: userData.dept,
+            type: type,
+            time: now,
+            lat: currentLat,
+            lng: currentLng,
+            status: status
+        });
+        alert(`打卡成功！(${status})`);
+        loadHistory();
+    } catch (e) { alert("打卡失敗: " + e.message); }
+  }
+
+  // 4. 申請 (寫入 cams_applications)
+  async function submitApp(cat) {
+    if (!userData.company) { alert("請先填寫資料"); return; }
+    try {
+        let payload = {
+            userId: currentUser.email,
+            name: userData.name,
+            email: currentUser.email,
+            company: userData.company,
+            dept: userData.dept,
+            category: cat,
+            startDate: document.getElementById(cat==='leave'?'l-start':'ot-start').value,
+            endDate: document.getElementById(cat==='leave'?'l-end':'ot-end').value,
+            createdAt: new Date()
+        };
+
+        if(cat === 'leave') {
+            payload.type = document.getElementById('leaveType').value;
+            payload.agentName = document.getElementById('agentName').value;
+            // 請假四層簽核狀態
+            payload.status = { agent: "待審核", leader: "待審核", boss: "待審核", client: "待審核" };
+        } else {
+            payload.type = document.getElementById('otType').value;
+            // 加班兩層簽核狀態
+            payload.status = { boss: "待審核", client: "待審核" };
+        }
+
+        await db.collection('cams_applications').add(payload);
+        alert("申請已送出！");
+        loadHistory();
+    } catch (e) { alert("失敗: " + e.message); }
+  }
+
+  // 5. 歷史紀錄
+  async function loadHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = "<p style='text-align:center'>載入中...</p>";
+    let html = "";
+
+    // 讀打卡
+    const snap1 = await db.collection('cams_records')
+        .where('userId', '==', currentUser.email)
+        .orderBy('time', 'desc').limit(5).get();
+    
+    if(!snap1.empty) {
+        html += `<p style="color:#666;border-bottom:1px solid #ddd">最近打卡</p>`;
+        snap1.forEach(doc => {
+            let d = doc.data();
+            let t = d.time.toDate().toLocaleString('zh-TW', {month:'numeric', day:'numeric', hour:'numeric', minute:'numeric'});
+            html += `<div class="history-item"><span>${d.type} <small>${t}</small></span><span class="badge">${d.status}</span></div>`;
+        });
     }
+
+    // 讀申請
+    const snap2 = await db.collection('cams_applications')
+        .where('userId', '==', currentUser.email)
+        .orderBy('createdAt', 'desc').limit(5).get();
+
+    if(!snap2.empty) {
+        html += `<p style="color:#666;border-bottom:1px solid #ddd;margin-top:15px;">申請紀錄</p>`;
+        snap2.forEach(doc => {
+            let d = doc.data();
+            let s = d.status;
+            let statusText = "處理中";
+            
+            // 狀態判斷邏輯
+            if(d.category === 'leave') {
+                if(s.client==='同意') statusText="✅ 甲方已核准";
+                else if(s.boss==='待審核') statusText="⏳ 等老闆";
+                else if(s.leader==='待審核') statusText="⏳ 等領班";
+                else if(s.agent==='待審核') statusText="⏳ 等代理人";
+            } else {
+                if(s.client==='同意') statusText="✅ 甲方已核准";
+                else if(s.boss==='待審核') statusText="⏳ 等老闆";
+            }
+            if(Object.values(s).includes('退回')) statusText="❌ 被退回";
+
+            html += `<div class="history-item"><span>${d.type} <br><small>${d.startDate.replace('T',' ')}</small></span><span class="badge">${statusText}</span></div>`;
+        });
+    }
+    list.innerHTML = html || "<p style='text-align:center'>無紀錄</p>";
   }
 
-  // 4. 傳送資料給 GAS (打卡/請假)
-  // 注意：現在我們直接把 Firebase 的資料傳給 GAS，GAS 不用再去查表了！
-  function sendToGAS(action, extraData = {}) {
-    if (!userData.company) { alert("請先填寫公司資料"); return; }
-    
-    document.getElementById('status-box').innerText = "傳送中...";
-    
-    const payload = {
-        action: action,
-        name: userData.name,        // 從 Firebase 拿的真實姓名
-        email: currentUser.email,
-        company: userData.company,
-        dept: userData.dept,
-        role: userData.role,        // 把身分也傳過去
-        ...extraData
-    };
-
-    fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
-        document.getElementById('status-box').innerText = res.message;
-        if(res.success) alert(res.message);
-    })
-    .catch(e => {
-        document.getElementById('status-box').innerText = "連線錯誤";
-    });
+  // 工具
+  function setDefaultTimes() {
+    const now = new Date();
+    const ymd = now.toISOString().split('T')[0];
+    document.getElementById('l-start').value = ymd + "T08:00";
+    document.getElementById('l-end').value = ymd + "T16:30";
+    document.getElementById('ot-start').value = ymd + "T08:00";
+    document.getElementById('ot-end').value = ymd + "T16:30";
   }
-
-  // 5. 各種按鈕動作
-  function doClock(type) {
-    if(!currentLat) { alert("定位中..."); return; }
-    sendToGAS("clockIn", { type: type, lat: currentLat, lng: currentLng });
-  }
-
-  function submitLeave() {
-    sendToGAS("requestLeave", {
-        type: document.getElementById('leaveType').value,
-        startDate: document.getElementById('l-start').value,
-        endDate: document.getElementById('l-end').value,
-        agentName: document.getElementById('agentName').value
-    });
-  }
-
-  function submitOvertime() {
-    sendToGAS("requestOvertime", {
-        overtimeType: document.getElementById('otType').value,
-        startDate: document.getElementById('ot-start').value,
-        endDate: document.getElementById('ot-end').value
-    });
-  }
-
-  // UI 切換
   function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
   function switchTab(t) {
-    ['clock','leave','overtime'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
+    ['clock','leave','overtime','history'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
     document.getElementById('tab-'+t).classList.remove('hidden');
+    document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+    event.target.classList.add('active');
+    if(t==='history') loadHistory();
   }
-
-  // GPS (簡化版)
-  let currentLat=0, currentLng=0;
   function startGPS() {
     navigator.geolocation.watchPosition(p => {
-        currentLat = p.coords.latitude;
-        currentLng = p.coords.longitude;
-        document.getElementById('dist-display').innerText = "OK";
+        currentLat = p.coords.latitude; currentLng = p.coords.longitude;
+        currentDist = getDist(currentLat, currentLng, TARGET_LAT, TARGET_LNG);
+        document.getElementById('dist-display').innerText = Math.round(currentDist);
     });
+  }
+  function getDist(lat1, lon1, lat2, lon2) {
+    var R = 6371000, dLat = (lat2-lat1)*(Math.PI/180), dLon = (lon2-lon1)*(Math.PI/180);
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function calculateLeave(dateStr) {
+      if(!dateStr) return 0;
+      let start = new Date(dateStr); let now = new Date();
+      let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      if(months < 6) return 0; if(months < 12) return 3; if(months < 24) return 7;
+      if(months < 36) return 10; if(months < 60) return 14; if(months < 120) return 15;
+      let days = 16 + Math.floor((months - 120) / 12); return days > 30 ? 30 : days;
   }
 </script>
 </body>
