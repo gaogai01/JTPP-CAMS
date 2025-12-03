@@ -43,7 +43,7 @@
 <body>
 
 <div class="container">
-  <h2>⚡ 尖山電廠系統</h2>
+  <h2>⚡ 尖山電廠系統 (JTPP-CAMS)</h2>
 
   <div id="login-section" style="text-align:center; padding: 40px 0;">
     <p>請使用 Google 帳號登入</p>
@@ -114,14 +114,15 @@
 </div>
 
 <script>
-  // ★★★ 請在這裡填入你的 Firebase Config ★★★
+  // ★★★ JTPP-CAMS Firebase Config ★★★
   const firebaseConfig = {
-  apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
-  authDomain: "tpc-monitor.firebaseapp.com",
-  projectId: "tpc-monitor",
-  storageBucket: "tpc-monitor.firebasestorage.app",
-  messagingSenderId: "1066125366380",
-  appId: "1:1066125366380:web:836d5898c051226669f449"
+    apiKey: "AIzaSyAQPANPPx5A3FtpISPcfX-kHPtG0PC6irA",
+    authDomain: "jtpp-cams.firebaseapp.com",
+    projectId: "jtpp-cams",
+    storageBucket: "jtpp-cams.firebasestorage.app",
+    messagingSenderId: "334286192470",
+    appId: "1:334286192470:web:9080eb43436b3a3fdfe0f7",
+    measurementId: "G-LDV2MZFY26"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -136,6 +137,7 @@
 
   let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
 
+  // 1. 登入
   function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
 
   auth.onAuthStateChanged(async (user) => {
@@ -214,7 +216,6 @@
   async function submitApp(cat) {
     if (!userData.company) { alert("請先填寫資料"); return; }
     
-    // 代理人檢查
     let agentName = "";
     if (cat === 'leave') {
         agentName = document.getElementById('agentName').value.trim();
@@ -235,11 +236,9 @@
         if(cat === 'leave') {
             payload.type = document.getElementById('leaveType').value;
             payload.agentName = agentName;
-            // 請假：四層簽核
             payload.status = { agent: "待審核", leader: "待審核", boss: "待審核", client: "待審核" };
         } else {
             payload.type = document.getElementById('otType').value;
-            // 加班：兩層簽核 (無代理、無領班)
             payload.status = { boss: "待審核", client: "待審核" };
         }
 
