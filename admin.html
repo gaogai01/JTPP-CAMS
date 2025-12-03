@@ -17,6 +17,7 @@
     .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; background: #f9f9f9; }
     .tab.active { background: #fff; border-top: 3px solid #1a73e8; }
   </style>
+  
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -58,14 +59,14 @@
 </div>
 
 <script>
-  // ★★★ 你的 Firebase Config ★★★
+  // ★★★ 請在這裡填入你的 Firebase Config ★★★
   const firebaseConfig = {
-    apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
-    authDomain: "tpc-monitor.firebaseapp.com",
-    projectId: "tpc-monitor",
-    storageBucket: "tpc-monitor.firebasestorage.app",
-    messagingSenderId: "1066125366380",
-    appId: "1:1066125366380:web:836d5898c051226669f449"
+    apiKey: "你的_API_KEY",
+    authDomain: "你的_PROJECT_ID.firebaseapp.com",
+    projectId: "你的_PROJECT_ID",
+    storageBucket: "你的_PROJECT_ID.firebasestorage.app",
+    messagingSenderId: "你的_SENDER_ID",
+    appId: "你的_APP_ID"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -73,7 +74,7 @@
   const db = firebase.firestore();
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  let currentUser = null, myRole = "";
+  let currentUser = null, myRole = "", myCompany = "", myDept = "";
 
   function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
 
@@ -85,7 +86,10 @@
       document.getElementById('my-name').innerText = user.displayName;
       
       const doc = await db.collection('cams_users').doc(user.email).get();
-      myRole = doc.exists ? doc.data().role : "訪客";
+      if(doc.exists) {
+          const d = doc.data();
+          myRole = d.role; myCompany = d.company; myDept = d.dept;
+      } else { myRole = "訪客"; }
       document.getElementById('my-role').innerText = myRole;
       
       setupRoleSelect(myRole);
@@ -102,36 +106,41 @@
       else s.innerHTML = `<option value="">無權限</option>`;
   }
 
-  // A. 審核功能
   async function loadReviewData() {
     const role = document.getElementById('reviewRoleSelect').value;
     const tL = document.querySelector("#leaveTable tbody");
     const tO = document.querySelector("#otTable tbody");
-    tL.innerHTML = "<tr><td colspan='6'>載入中...</td></tr>";
-    tO.innerHTML = "<tr><td colspan='5'>載入中...</td></tr>";
+    tL.innerHTML = "<tr><td colspan='6'>載入中...</td></tr>"; tO.innerHTML = "<tr><td colspan='5'>載入中...</td></tr>";
 
     if(!role) { tL.innerHTML=""; tO.innerHTML=""; return; }
 
-    // 抓取所有申請 (可優化為只抓待審核)
-    const snapshot = await db.collection('cams_applications').orderBy('createdAt', 'desc').limit(50).get();
+    // ★★★ 視角過濾 ★★★
+    let query = db.collection('cams_applications').orderBy('createdAt', 'desc').limit(50);
+    
+    if (myRole === '外包老闆' || myRole === '外包領班') {
+        query = query.where('company', '==', myCompany);
+    } else if (myRole === '甲方') {
+        query = query.where('dept', '==', myDept);
+    }
+    // ★★★★★★★★★★★
+
+    const snapshot = await query.get();
     tL.innerHTML = ""; tO.innerHTML = "";
 
     snapshot.forEach(doc => {
         let d = doc.data();
         let id = doc.id;
+        let status = d.status;
         
         if(d.category === 'leave') {
-            let status = d.status;
-            let myStatus = status[role]; // agent, leader, boss, client
-            // 判斷是否輪到我
+            let myStatus = status[role];
             let canReview = false;
+            // 審核鏈：代 -> 領 -> 老 -> 甲
             if(role==='agent' && status.agent==='待審核') canReview=true;
             if(role==='leader' && status.agent==='同意' && status.leader==='待審核') canReview=true;
             if(role==='boss' && status.leader==='同意' && status.boss==='待審核') canReview=true;
             if(role==='client' && status.boss==='同意' && status.client==='待審核') canReview=true;
-
-            // 如果我是管理者，開啟上帝模式 (全都可以審)
-            if(myRole === '管理者' && myStatus === '待審核') canReview = true;
+            if(myRole==='管理者' && myStatus==='待審核') canReview=true;
 
             let btns = canReview ? 
                 `<button class="btn-approve" onclick="review('${id}', '${role}', '同意')">同意</button> 
@@ -139,20 +148,18 @@
                 `<span>${myStatus}</span>`;
 
             let progress = `<small>代:${status.agent} 領:${status.leader} 老:${status.boss} 甲:${status.client}</small>`;
-            tL.innerHTML += `<tr><td>${d.name}</td><td>${d.agentName}</td><td>${d.type}</td>
+            tL.innerHTML += `<tr><td>${d.name} <br><small>${d.company}</small></td><td>${d.agentName}</td><td>${d.type}</td>
                 <td><small>${d.startDate.replace('T',' ')}<br>~${d.endDate.split('T')[1]}</small></td>
                 <td>${progress}</td><td>${btns}</td></tr>`;
         } 
-        else { // 加班
-            let status = d.status;
+        else { // 加班 (僅 Boss -> Client)
             let myStatus = status[role]; 
-            // 加班只有 boss, client
             let canReview = false;
             if(role==='boss' && status.boss==='待審核') canReview=true;
             if(role==='client' && status.boss==='同意' && status.client==='待審核') canReview=true;
-            if(myRole === '管理者' && myStatus === '待審核') canReview = true;
+            if(myRole==='管理者' && myStatus==='待審核') canReview=true;
 
-            if(role === 'agent' || role === 'leader') return; // 加班不用這兩層
+            if(role === 'agent' || role === 'leader') return; 
 
             let btns = canReview ? 
                 `<button class="btn-approve" onclick="review('${id}', '${role}', '同意')">同意</button> 
@@ -160,7 +167,7 @@
                 `<span>${myStatus}</span>`;
 
             let progress = `<small>老:${status.boss} 甲:${status.client}</small>`;
-            tO.innerHTML += `<tr><td>${d.name}</td><td>${d.type}</td>
+            tO.innerHTML += `<tr><td>${d.name} <br><small>${d.company}</small></td><td>${d.type}</td>
                 <td><small>${d.startDate.replace('T',' ')}<br>~${d.endDate.split('T')[1]}</small></td>
                 <td>${progress}</td><td>${btns}</td></tr>`;
         }
@@ -169,39 +176,48 @@
 
   async function review(id, role, decision) {
       if(!confirm(`確定 ${decision}？`)) return;
-      // 更新 Firestore 中 status 物件的特定欄位
-      // 語法: "status.agent": "同意"
-      let updateField = {};
-      updateField[`status.${role}`] = decision;
-      
+      let updateField = {}; updateField[`status.${role}`] = decision;
       await db.collection('cams_applications').doc(id).update(updateField);
-      alert("已更新");
-      loadReviewData();
+      alert("已更新"); loadReviewData();
   }
 
-  // B. 權限管理
   async function loadUsers() {
-      if(myRole !== "管理者") { alert("權限不足"); return; }
+      if(!['管理者', '外包老闆', '甲方'].includes(myRole)) { alert("權限不足"); return; }
       const tbody = document.querySelector("#userTable tbody");
       tbody.innerHTML = "<tr><td colspan='6'>讀取中...</td></tr>";
       
-      const snap = await db.collection('cams_users').get();
+      let query = db.collection('cams_users');
+      // 過濾
+      if (myRole === '外包老闆') query = query.where('company', '==', myCompany);
+      else if (myRole === '甲方') query = query.where('dept', '==', myDept);
+
+      const snap = await query.get();
       tbody.innerHTML = "";
       
       snap.forEach(doc => {
           let u = doc.data();
+          let roleOptions = "";
+          if (myRole === '管理者') {
+            roleOptions = `
+                <option value="外包員工" ${u.role==='外包員工'?'selected':''}>外包員工</option>
+                <option value="外包領班" ${u.role==='外包領班'?'selected':''}>外包領班</option>
+                <option value="外包老闆" ${u.role==='外包老闆'?'selected':''}>外包老闆</option>
+                <option value="甲方" ${u.role==='甲方'?'selected':''}>甲方</option>
+                <option value="管理者" ${u.role==='管理者'?'selected':''}>管理者</option>`;
+          } else if (myRole === '外包老闆') {
+            roleOptions = `
+                <option value="外包員工" ${u.role==='外包員工'?'selected':''}>外包員工</option>
+                <option value="外包領班" ${u.role==='外包領班'?'selected':''}>外包領班</option>`;
+          } else {
+            roleOptions = `<option disabled selected>${u.role}</option>`;
+          }
+
+          let btn = (myRole === '管理者' || myRole === '外包老闆') ? `<button class="btn-update" onclick="updateRole('${doc.id}')">變更</button>` : `<span style="color:#999">唯讀</span>`;
+
           tbody.innerHTML += `<tr>
             <td>${u.name}</td><td>${u.email}</td><td>${u.company}</td><td>${u.role}</td>
-            <td>
-                <select id="role-${doc.id}">
-                    <option value="外包員工">外包員工</option>
-                    <option value="外包領班">外包領班</option>
-                    <option value="外包老闆">外包老闆</option>
-                    <option value="甲方">甲方</option>
-                    <option value="管理者">管理者</option>
-                </select>
-            </td>
-            <td><button class="btn-update" onclick="updateRole('${doc.id}')">變更</button></td>
+            <td><select id="role-${doc.id}" class="role-select">${roleOptions}</select></td>
+            <td>${btn}</td>
           </tr>`;
       });
   }
@@ -209,15 +225,13 @@
   async function updateRole(id) {
       let newRole = document.getElementById(`role-${id}`).value;
       await db.collection('cams_users').doc(id).update({ role: newRole });
-      alert("權限已更新");
-      loadUsers();
+      alert("權限已更新"); loadUsers();
   }
 
   function switchTab(t) {
       ['review', 'users'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
       document.getElementById('tab-'+t).classList.remove('hidden');
-      document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
-      event.target.classList.add('active');
+      document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); event.target.classList.add('active');
       if(t==='users') loadUsers();
   }
 </script>
