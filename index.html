@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>尖山電廠系統</title>
+  <title>尖山電廠系統 (Firebase版)</title>
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
     .container { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -11,107 +11,87 @@
     .hidden { display: none !important; }
     input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; margin-top: 10px; }
+    button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; }
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; }
+    
     .btn-in { background-color: #1a73e8; } 
     .btn-out { background-color: #d93025; }
-    .btn-leave { background-color: #f9ab00; color: black; }
-    .btn-back { background-color: #188038; }
-    .btn-ot { background-color: #6f42c1; color: white; }
+    .btn-ot { background-color: #6f42c1; }
     .btn-edit { background-color: #6c757d; font-size: 12px; padding: 5px 10px; width: auto; margin-left: 10px; }
     
     #user-info { display: flex; align-items: center; background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
     #user-info img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 2px solid white; }
     .user-details { flex-grow: 1; }
     .user-name { font-weight: bold; font-size: 16px; color: #1f1f1f; }
+    .user-role { font-size: 12px; background: #007bff; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
     
     #status-box { text-align: center; padding: 10px; margin-top: 15px; border-radius: 5px; font-weight: bold; }
-    .success { background: #d4edda; color: #155724; }
-    .error { background: #f8d7da; color: #721c24; }
-    .loading { background: #cce5ff; color: #004085; }
-
     .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; overflow-x: auto; }
     .tab { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #666; font-weight: bold; white-space: nowrap; font-size: 14px; }
     .tab.active { border-bottom: 3px solid #1a73e8; color: #1a73e8; }
-    .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
-    .leave-stats { display: flex; justify-content: space-between; background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 13px; }
   </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
 <div class="container">
   <h2>⚡ 尖山電廠系統</h2>
-  <div id="login-section">
-    <p style="text-align:center; color:#666;">請使用 Google 帳號登入</p>
-    <div id="g_id_onload"
-         data-client_id="1066125366380-tarq5fktrgap3cp3karp2ednbl6vk6n0.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false"></div>
-    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"></div>
+
+  <div id="login-section" style="text-align:center;">
+    <p>請使用 Google 帳號登入</p>
+    <button class="btn-in" onclick="loginGoogle()">🔵 Google 登入</button>
   </div>
 
   <div id="main-section" class="hidden">
     <div id="user-info">
       <img id="u-photo" src="" alt="">
       <div class="user-details">
-        <div class="user-name" id="u-name">載入中...</div>
-        <div class="user-meta" id="u-company-display">讀取資料中...</div>
+        <div class="user-name"><span id="u-name">...</span> <span id="u-role" class="user-role">...</span></div>
+        <div class="user-meta" id="u-company-display">讀取中...</div>
       </div>
-      <button class="btn-edit" onclick="toggleEditMode()">修改資料</button>
+      <button class="btn-edit" onclick="toggleEditMode()">修改</button>
     </div>
 
-    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px; border:1px solid #eee; border-radius:8px;">
-        <label>員工姓名</label><input type="text" id="dbName">
+    <div id="meta-form" class="hidden" style="background: #fafafa; padding: 15px; margin-bottom: 15px; border-radius:8px;">
+        <label>真實姓名</label><input type="text" id="dbName">
         <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
-        <button class="btn-in" onclick="saveProfile()">儲存並同步</button>
+        <button class="btn-in" onclick="saveToFirebase()">儲存資料</button>
     </div>
 
     <div class="tabs">
       <div class="tab active" onclick="switchTab('clock')">打卡</div>
       <div class="tab" onclick="switchTab('leave')">請假</div>
       <div class="tab" onclick="switchTab('overtime')">加班</div>
-      <div class="tab" onclick="switchTab('history')">查詢</div>
     </div>
 
     <div id="tab-clock">
-        <p style="text-align:center; color:#555; margin-bottom:10px;">
-           📍 GPS 距離：<span id="dist-display" style="color:blue;">偵測中...</span>
-        </p>
+        <p style="text-align:center; color:#555; margin-bottom:10px;">📍 GPS: <span id="dist-display">偵測中...</span></p>
         <div class="btn-grid">
-            <button class="btn-in" onclick="doClock('上班')">上班打卡<br><small>(08:00前)</small></button>
-            <button class="btn-leave" onclick="doClock('外出')">請假/外出<br><small>(紀錄時間)</small></button>
-            <button class="btn-back" onclick="doClock('返回')">銷假/返回<br><small>(紀錄時間)</small></button>
-            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>(16:30後)</small></button>
+            <button class="btn-in" onclick="doClock('上班')">上班打卡</button>
+            <button class="btn-leave" onclick="doClock('外出')">請假/外出</button>
+            <button class="btn-back" onclick="doClock('返回')">銷假/返回</button>
+            <button class="btn-out" onclick="doClock('下班')">下班打卡</button>
         </div>
     </div>
 
     <div id="tab-leave" class="hidden">
-        <div class="leave-stats">
-            <span>總特休: <b id="l-total">0</b> 天</span>
-            <span>已休: <b id="l-used">0</b> 天</span>
-            <span style="color:red">剩餘: <b id="l-left">0</b> 天</span>
-        </div>
         <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
-        <label>職務代理人姓名</label><input type="text" id="agentName" placeholder="請輸入代理人姓名">
-        
-        <label>開始</label><input type="datetime-local" id="l-start" step="1800">
-        <label>結束</label><input type="datetime-local" id="l-end" step="1800">
-        <button class="btn-back" onclick="submitLeave()">送出假單</button>
+        <label>代理人</label><input type="text" id="agentName" placeholder="代理人姓名">
+        <label>開始</label><input type="datetime-local" id="l-start">
+        <label>結束</label><input type="datetime-local" id="l-end">
+        <button class="btn-out" onclick="submitLeave()">送出假單</button>
     </div>
 
     <div id="tab-overtime" class="hidden">
-        <label>方式</label><select id="otType"><option value="申請加班費">申請加班費</option><option value="申請補休">申請補休</option></select>
-        <label>開始</label><input type="datetime-local" id="ot-start" step="1800">
-        <label>結束</label><input type="datetime-local" id="ot-end" step="1800">
+        <label>方式</label><select id="otType"><option>申請加班費</option><option>申請補休</option></select>
+        <label>開始</label><input type="datetime-local" id="ot-start">
+        <label>結束</label><input type="datetime-local" id="ot-end">
         <button class="btn-ot" onclick="submitOvertime()">送出加班申請</button>
-    </div>
-
-    <div id="tab-history" class="hidden">
-        <button class="btn-edit" onclick="loadHistory()" style="width:100%; margin:0 0 10px 0;">🔄 重新整理</button>
-        <div id="history-list" style="background:#fff;"></div>
     </div>
 
     <div id="status-box"></div>
@@ -119,190 +99,173 @@
 </div>
 
 <script>
-  // ★★★ 換成你的 /exec 網址 ★★★
+  // ★★★ 設定區 ★★★
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyr7jZP4BARKdsGYccRYWnrIQs7kvPvyqLqw-ptiqTr5jF4j695iM9m01tsBhtV6ISj0g/exec";
-  const TARGET_LAT = 23.564675316036272;
-  const TARGET_LNG = 119.66034190357468;
-  const MAX_DIST = 100;
   
-  let currentUserToken = null;
-  let currentLat = 0, currentLng = 0, currentDist = 9999;
+  // 你的 Firebase 設定 (請直接複製你之前提供的那個)
+  const firebaseConfig = {
+    apiKey: "AIzaSyA58DOYplXhmo7HDYN_2Hgu-wo4ceYmINA",
+    authDomain: "tpc-monitor.firebaseapp.com",
+    projectId: "tpc-monitor",
+    storageBucket: "tpc-monitor.firebasestorage.app",
+    messagingSenderId: "1066125366380",
+    appId: "1:1066125366380:web:836d5898c051226669f449"
+  };
 
-  function setDefaultTimes() {
-    const now = new Date();
-    const ymd = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
-    document.getElementById('l-start').value = ymd + "T08:00";
-    document.getElementById('l-end').value = ymd + "T16:30";
-    document.getElementById('ot-start').value = ymd + "T08:00";
-    document.getElementById('ot-end').value = ymd + "T16:30";
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser = null;
+  let userData = {}; // 存 Firestore 資料
+  
+  // 1. 登入邏輯
+  function loginGoogle() {
+    auth.signInWithPopup(provider).catch(e => alert(e.message));
   }
 
-  function handleCredentialResponse(response) {
-    try {
-      const payload = parseJwt(response.credential);
-      currentUserToken = response.credential;
+  // 監聽登入狀態
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
-      document.getElementById('u-photo').src = payload.picture;
-      setDefaultTimes();
-      fetchProfile();
+      document.getElementById('u-photo').src = user.photoURL;
+      
+      await loadUserData(user); // 從 Firebase 讀取資料
       startGPS();
-    } catch (e) { alert("登入錯誤：" + e); }
-  }
+    }
+  });
 
-  function fetchProfile() {
-    updateStatus("讀取資料中...", "loading");
-    fetch(GAS_URL, { 
-      method: "POST", body: JSON.stringify({ action: "getProfile", credential: currentUserToken }) 
-    })
-    .then(r => r.json())
-    .then(data => {
-      updateStatus("", "");
-      if(data.found) {
-        document.getElementById('u-name').innerText = data.name;
-        document.getElementById('u-company-display').innerText = data.company + " / " + data.dept;
-        document.getElementById('dbName').value = data.name;
-        document.getElementById('jobTitle').value = data.jobTitle;
-        document.getElementById('company').value = data.company;
-        document.getElementById('dept').value = data.dept;
-        
-        // 顯示特休統計
-        document.getElementById('l-total').innerText = data.leaveTotal;
-        document.getElementById('l-used').innerText = data.leaveUsed;
-        document.getElementById('l-left').innerText = data.leaveLeft;
-      } else {
-        document.getElementById('u-name').innerText = "新員工";
+  // 2. 讀取/建立 使用者資料 (Firestore)
+  async function loadUserData(user) {
+    const userRef = db.collection('users').doc(user.email); // 用 Email 當 ID
+    const doc = await userRef.get();
+
+    if (doc.exists) {
+        // 老鳥：讀取資料
+        userData = doc.data();
+        updateUI(userData);
+    } else {
+        // 新人：建立預設資料
+        userData = {
+            name: user.displayName,
+            email: user.email,
+            role: "外包員工", // 預設身分
+            company: "",
+            dept: "",
+            jobTitle: "",
+            createdAt: new Date().toISOString()
+        };
+        await userRef.set(userData);
+        updateUI(userData);
+        alert("歡迎新用戶，請先填寫基本資料！");
         document.getElementById('meta-form').classList.remove('hidden');
-      }
-    });
-  }
-
-  function saveProfile() {
-    const name = document.getElementById('dbName').value;
-    if(!name) { alert("請輸入員工姓名"); return; }
-    updateStatus("儲存中...", "loading");
-    fetch(GAS_URL, { 
-      method: "POST", 
-      body: JSON.stringify({ 
-        action: "updateProfile", credential: currentUserToken, 
-        name: name, jobTitle: document.getElementById('jobTitle').value,
-        company: document.getElementById('company').value, dept: document.getElementById('dept').value 
-      }) 
-    })
-    .then(r => r.json())
-    .then(res => {
-      updateStatus(res.message, "success");
-      fetchProfile(); // 重新讀取以更新特休顯示
-      document.getElementById('meta-form').classList.add('hidden');
-    });
-  }
-
-  function doClock(type) {
-    if(!document.getElementById('company').value) { alert("請先設定資料"); return; }
-    if(currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
-    updateStatus("打卡中...", "loading");
-    sendToGAS({ action: "clockIn", credential: currentUserToken, type: type, company: document.getElementById('company').value, dept: document.getElementById('dept').value, lat: currentLat, lng: currentLng });
-  }
-
-  function submitLeave() {
-    // 檢查代理人
-    const agent = document.getElementById('agentName').value;
-    if(!agent) { alert("請輸入代理人姓名"); return; }
-    
-    updateStatus("傳送假單...", "loading");
-    sendToGAS({ 
-        action: "requestLeave", 
-        credential: currentUserToken, 
-        company: document.getElementById('company').value, 
-        dept: document.getElementById('dept').value, 
-        type: document.getElementById('leaveType').value, 
-        startDate: document.getElementById('l-start').value, 
-        endDate: document.getElementById('l-end').value,
-        agentName: agent // 傳送代理人姓名
-    });
-  }
-  
-  function submitOvertime() {
-    updateStatus("傳送加班...", "loading");
-    sendToGAS({ 
-        action: "requestOvertime", 
-        credential: currentUserToken, 
-        overtimeType: document.getElementById('otType').value, 
-        startDate: document.getElementById('ot-start').value, 
-        endDate: document.getElementById('ot-end').value, 
-        company: document.getElementById('company').value, 
-        dept: document.getElementById('dept').value 
-    });
-  }
-
-  function loadHistory() {
-    document.getElementById('history-list').innerHTML = "<p style='text-align:center'>讀取中...</p>";
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getHistory", credential: currentUserToken }) })
-    .then(r => r.json())
-    .then(data => {
-        let html = "";
-        // 顯示列表 (略，與之前類似，但現在會顯示正確的簽核狀態)
-        if(data.leave.length > 0) {
-            html += `<p style="font-size:12px;color:#666;border-bottom:1px solid #ddd;">請假</p>`;
-            data.leave.forEach(item => {
-               html += `<div class="history-item"><span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span><span style="background:#fff3cd;padding:3px;border-radius:4px;font-size:12px;">${item.status}</span></div>`; 
-            });
-        }
-        if(data.overtime.length > 0) {
-            html += `<p style="font-size:12px;color:#666;border-bottom:1px solid #ddd;margin-top:10px;">加班</p>`;
-            data.overtime.forEach(item => {
-               html += `<div class="history-item"><span>${item.type} <br><small>${item.start.replace('T',' ')}</small></span><span style="background:#fff3cd;padding:3px;border-radius:4px;font-size:12px;">${item.status}</span></div>`; 
-            });
-        }
-        document.getElementById('history-list').innerHTML = html || "<p style='text-align:center'>無紀錄</p>";
-    });
-  }
-
-  function sendToGAS(data) {
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) })
-    .then(r => r.json())
-    .then(res => updateStatus(res.message, res.success ? "success" : "error"))
-    .catch(e => updateStatus("連線失敗", "error"));
-  }
-
-  function updateStatus(msg, type) {
-    const box = document.getElementById('status-box');
-    box.innerText = msg;
-    box.className = type;
-  }
-  
-  function parseJwt (token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  }
-
-  function startGPS() {
-    if(navigator.geolocation) {
-        navigator.geolocation.watchPosition((pos) => {
-            currentLat = pos.coords.latitude;
-            currentLng = pos.coords.longitude;
-            currentDist = getDist(currentLat, currentLng, TARGET_LAT, TARGET_LNG);
-            document.getElementById('dist-display').innerText = Math.round(currentDist);
-        }, null, { enableHighAccuracy: true });
     }
   }
 
-  function switchTab(t) {
-    ['clock', 'leave', 'overtime', 'history'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
-    document.getElementById('tab-'+t).classList.remove('hidden');
-    if(t === 'history') loadHistory();
+  function updateUI(data) {
+    document.getElementById('u-name').innerText = data.name;
+    document.getElementById('u-role').innerText = data.role;
+    document.getElementById('u-company-display').innerText = (data.company || "未設定") + " / " + (data.dept || "未設定");
+    
+    // 填入表單
+    document.getElementById('dbName').value = data.name;
+    document.getElementById('company').value = data.company || "";
+    document.getElementById('dept').value = data.dept || "";
+    document.getElementById('jobTitle').value = data.jobTitle || "";
   }
 
+  // 3. 修改並儲存資料 (寫入 Firebase)
+  async function saveToFirebase() {
+    const newData = {
+        name: document.getElementById('dbName').value,
+        company: document.getElementById('company').value,
+        dept: document.getElementById('dept').value,
+        jobTitle: document.getElementById('jobTitle').value
+    };
+    
+    try {
+        await db.collection('users').doc(currentUser.email).update(newData);
+        userData = { ...userData, ...newData }; // 更新本地變數
+        updateUI(userData);
+        document.getElementById('meta-form').classList.add('hidden');
+        alert("資料已更新！");
+    } catch (e) {
+        alert("更新失敗：" + e.message);
+    }
+  }
+
+  // 4. 傳送資料給 GAS (打卡/請假)
+  // 注意：現在我們直接把 Firebase 的資料傳給 GAS，GAS 不用再去查表了！
+  function sendToGAS(action, extraData = {}) {
+    if (!userData.company) { alert("請先填寫公司資料"); return; }
+    
+    document.getElementById('status-box').innerText = "傳送中...";
+    
+    const payload = {
+        action: action,
+        name: userData.name,        // 從 Firebase 拿的真實姓名
+        email: currentUser.email,
+        company: userData.company,
+        dept: userData.dept,
+        role: userData.role,        // 把身分也傳過去
+        ...extraData
+    };
+
+    fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+        document.getElementById('status-box').innerText = res.message;
+        if(res.success) alert(res.message);
+    })
+    .catch(e => {
+        document.getElementById('status-box').innerText = "連線錯誤";
+    });
+  }
+
+  // 5. 各種按鈕動作
+  function doClock(type) {
+    if(!currentLat) { alert("定位中..."); return; }
+    sendToGAS("clockIn", { type: type, lat: currentLat, lng: currentLng });
+  }
+
+  function submitLeave() {
+    sendToGAS("requestLeave", {
+        type: document.getElementById('leaveType').value,
+        startDate: document.getElementById('l-start').value,
+        endDate: document.getElementById('l-end').value,
+        agentName: document.getElementById('agentName').value
+    });
+  }
+
+  function submitOvertime() {
+    sendToGAS("requestOvertime", {
+        overtimeType: document.getElementById('otType').value,
+        startDate: document.getElementById('ot-start').value,
+        endDate: document.getElementById('ot-end').value
+    });
+  }
+
+  // UI 切換
   function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
-  
-  function getDist(lat1, lon1, lat2, lon2) {
-    var R = 6371000, dLat = (lat2-lat1)*(Math.PI/180), dLon = (lon2-lon1)*(Math.PI/180);
-    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  function switchTab(t) {
+    ['clock','leave','overtime'].forEach(id => document.getElementById('tab-'+id).classList.add('hidden'));
+    document.getElementById('tab-'+t).classList.remove('hidden');
+  }
+
+  // GPS (簡化版)
+  let currentLat=0, currentLng=0;
+  function startGPS() {
+    navigator.geolocation.watchPosition(p => {
+        currentLat = p.coords.latitude;
+        currentLng = p.coords.longitude;
+        document.getElementById('dist-display').innerText = "OK";
+    });
   }
 </script>
 </body>
