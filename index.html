@@ -45,21 +45,15 @@
     .card { border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; background: #eee; }
 
-    /* ★★★ 新增：GPS 狀態卡片樣式 ★★★ */
+    /* GPS 狀態卡片樣式 */
     .gps-box {
-        text-align: center;
-        padding: 30px 20px;
-        border-radius: 16px;
-        background: #f8f9fa;
-        margin-bottom: 20px;
-        border: 2px solid #e9ecef;
-        transition: all 0.3s ease;
+        text-align: center; padding: 30px 20px; border-radius: 16px; background: #f8f9fa;
+        margin-bottom: 20px; border: 2px solid #e9ecef; transition: all 0.3s ease;
     }
     .gps-icon { font-size: 48px; display: block; margin-bottom: 10px; line-height: 1; }
     .gps-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 5px; }
     .gps-desc { font-size: 14px; color: #666; }
     
-    /* 狀態顏色變換 */
     .gps-status-ok { background: #d4edda; border-color: #c3e6cb; color: #155724; }
     .gps-status-ok .gps-title { color: #155724; }
     .gps-status-ok .gps-desc { color: #155724; }
@@ -68,23 +62,27 @@
     .gps-status-err .gps-title { color: #721c24; }
     .gps-status-err .gps-desc { color: #721c24; }
 
-    /* 定位中的呼吸燈動畫 */
     .pulse-container { height: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-    .pulse-dot {
-        width: 20px; height: 20px; background: #1a73e8; border-radius: 50%;
-        animation: pulse 1.5s infinite;
-    }
+    .pulse-dot { width: 20px; height: 20px; background: #1a73e8; border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse {
         0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
         70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(26, 115, 232, 0); }
         100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
     }
+    
+    /* 餘額顯示區塊 */
+    .balance-box {
+        background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; 
+        margin-bottom: 10px; font-size: 14px; border: 1px solid #ffeeba;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .balance-val { font-weight: bold; font-size: 18px; }
   </style>
   
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  </head>
+</head>
 <body>
 
 <div class="container">
@@ -121,11 +119,8 @@
 
     <div id="tab-clock">
         <div id="gps-box" class="gps-box">
-            <div class="pulse-container" id="gps-loading">
-                <div class="pulse-dot"></div>
-            </div>
+            <div class="pulse-container" id="gps-loading"><div class="pulse-dot"></div></div>
             <div id="gps-icon" class="gps-icon hidden"></div>
-            
             <div class="gps-title" id="gps-title">正在定位中...</div>
             <div class="gps-desc" id="gps-desc">請允許瀏覽器使用位置權限</div>
         </div>
@@ -148,7 +143,19 @@
     </div>
 
     <div id="tab-leave" class="hidden">
-        <label>假別</label><select id="leaveType"><option>特休</option><option>事假</option><option>病假</option></select>
+        <div class="balance-box" id="balance-display-box">
+            <span id="balance-label">特休餘額</span>
+            <span>剩餘 <span class="balance-val" id="balance-val">0</span> 天</span>
+        </div>
+        
+        <label>假別</label>
+        <select id="leaveType" onchange="updateBalanceDisplay()">
+            <option value="特休">特休</option>
+            <option value="補休">補休</option>
+            <option value="事假">事假</option>
+            <option value="病假">病假</option>
+        </select>
+        
         <label>代理人</label><select id="agentSelect"></select>
         <label>開始</label><input type="datetime-local" id="l-start">
         <label>結束</label><input type="datetime-local" id="l-end">
@@ -162,8 +169,15 @@
     </div>
 
     <div id="tab-history" class="hidden">
-        <button class="btn-edit" onclick="loadHistory()" style="width:100%">🔄 刷新</button>
-        <div id="history-list"></div>
+        <div style="background:#fafafa; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #ddd;">
+            <label style="margin-top:0">查詢期間</label>
+            <div style="display:flex; gap:10px;">
+                <input type="date" id="history-start" style="margin-bottom:0">
+                <input type="date" id="history-end" style="margin-bottom:0">
+            </div>
+        </div>
+        <button class="btn-edit" onclick="loadHistory()" style="width:100%">🔄 查詢紀錄</button>
+        <div id="history-list" style="margin-top:10px;"></div>
     </div>
   </div>
 </div>
@@ -184,10 +198,12 @@
   const db = firebase.firestore();
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // ★ 移除 Google Maps 相關變數，保留座標與距離計算邏輯
   const PLANT_LOCATION = { lat: 23.564675316036272, lng: 119.66034190357468 };
   const MAX_DIST = 100;
   let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
+  
+  // 假別餘額暫存
+  let leaveBalances = { annual: 0, comp: 0 }; 
 
   function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
 
@@ -197,20 +213,61 @@
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
       document.getElementById('u-photo').src = user.photoURL;
+      
+      // 初始化紀錄查詢日期 (當月1號~月底)
+      initHistoryDates();
+      
       await loadUserData(user);
-      startGPS(); // 啟動定位
+      startGPS(); 
     }
   });
+
+  // 設定日期預設值
+  function initHistoryDates() {
+      const now = new Date();
+      // 當月 1 號
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      // 當月最後一天 (下個月第0天)
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      // 轉換為 YYYY-MM-DD 格式
+      const toISO = (d) => {
+          const offset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      };
+      
+      document.getElementById('history-start').value = toISO(firstDay);
+      document.getElementById('history-end').value = toISO(lastDay);
+  }
 
   async function loadUserData(user) {
     const doc = await db.collection('cams_users').doc(user.email).get();
     if (doc.exists) {
         userData = doc.data();
         updateUI(userData);
+        
+        // 計算餘額
+        if(userData.onboardDate) {
+            let totalAnnual = calculateLeave(userData.onboardDate);
+            let usedAnnual = userData.leaveUsed || 0; // 已休特休
+            let compTotal = userData.compLeaveTotal || 0; // 補休總額 (需資料庫有欄位)
+            let compUsed = userData.compLeaveUsed || 0;   // 已休補休
+            
+            leaveBalances.annual = totalAnnual - usedAnnual;
+            leaveBalances.comp = compTotal - compUsed;
+            
+            updateBalanceDisplay(); // 更新介面顯示
+        }
+        
         loadColleagues();
         loadTasks();
     } else {
-        userData = { name: user.displayName, email: user.email, role: "外包員工", company: "", dept: "", createdAt: new Date().toISOString() };
+        // 新用戶預設值
+        userData = { 
+            name: user.displayName, email: user.email, role: "外包員工", 
+            company: "", dept: "", createdAt: new Date().toISOString(),
+            compLeaveTotal: 0, compLeaveUsed: 0, leaveUsed: 0
+        };
         await db.collection('cams_users').doc(user.email).set(userData);
         updateUI(userData);
         document.getElementById('meta-form').classList.remove('hidden');
@@ -226,77 +283,95 @@
     document.getElementById('dept').value = data.dept || "";
     document.getElementById('onboardDate').value = data.onboardDate || "";
   }
+  
+  // 更新假別餘額顯示
+  function updateBalanceDisplay() {
+      const type = document.getElementById('leaveType').value;
+      const label = document.getElementById('balance-label');
+      const val = document.getElementById('balance-val');
+      const box = document.getElementById('balance-display-box');
+      
+      if (type === '特休') {
+          box.style.display = 'flex';
+          box.style.background = '#fff3cd'; // 黃色系
+          box.style.color = '#856404';
+          label.innerText = "特休餘額";
+          val.innerText = leaveBalances.annual;
+      } else if (type === '補休') {
+          box.style.display = 'flex';
+          box.style.background = '#d1ecf1'; // 藍色系
+          box.style.color = '#0c5460';
+          label.innerText = "補休餘額";
+          val.innerText = leaveBalances.comp;
+      } else {
+          // 事病假不顯示餘額，或是顯示 N/A
+          box.style.display = 'none';
+      }
+  }
 
-  // ★ 修改處：使用原生 GPS API + 視覺化卡片更新
+  async function saveToFirebase() {
+    const btn = document.querySelector('button[onclick="saveToFirebase()"]');
+    btn.innerText = "儲存中..."; btn.disabled = true;
+    try {
+        const newData = {
+            name: document.getElementById('dbName').value,
+            jobTitle: document.getElementById('jobTitle').value,
+            company: document.getElementById('company').value,
+            dept: document.getElementById('dept').value,
+            onboardDate: document.getElementById('onboardDate').value
+        };
+        if (!currentUser || !currentUser.email) throw new Error("尚未登入");
+        await db.collection('cams_users').doc(currentUser.email).set(newData, { merge: true });
+        alert("✅ 資料儲存成功！"); location.reload();
+    } catch (error) {
+        console.error(error); alert("❌ 儲存失敗！\n" + error.message);
+    } finally { btn.innerText = "儲存資料"; btn.disabled = false; }
+  }
+
   function startGPS() {
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(
             (position) => {
-                currentLat = position.coords.latitude;
-                currentLng = position.coords.longitude;
-                
-                // 使用數學公式計算距離 (因為沒有 Google API 了)
+                currentLat = position.coords.latitude; currentLng = position.coords.longitude;
                 currentDist = getDist(currentLat, currentLng, PLANT_LOCATION.lat, PLANT_LOCATION.lng);
-                
-                // 更新介面 UI
                 updateGpsUI(currentDist);
             },
             (err) => { 
                 console.log(err); 
                 document.getElementById('gps-title').innerText = "定位失敗";
-                document.getElementById('gps-desc').innerText = "請確認已開啟手機定位功能";
+                document.getElementById('gps-desc').innerText = "請確認手機定位已開啟";
             },
             { enableHighAccuracy: true }
         );
-    } else {
-        alert("瀏覽器不支援定位");
-    }
+    } else { alert("瀏覽器不支援定位"); }
   }
 
-  // 更新卡片外觀的核心函式
   function updateGpsUI(dist) {
       const box = document.getElementById('gps-box');
       const iconDiv = document.getElementById('gps-icon');
       const loadDiv = document.getElementById('gps-loading');
       const title = document.getElementById('gps-title');
       const desc = document.getElementById('gps-desc');
-
-      loadDiv.classList.add('hidden'); // 隱藏讀取動畫
-      iconDiv.classList.remove('hidden'); // 顯示圖示
-      
+      loadDiv.classList.add('hidden'); iconDiv.classList.remove('hidden');
       const distInt = Math.round(dist);
-
       if (dist <= MAX_DIST) {
-          // 範圍內：綠色樣式
-          box.className = "gps-box gps-status-ok";
-          iconDiv.innerHTML = "✅"; // 或使用 <svg>...</svg>
-          title.innerText = "已進入打卡範圍";
-          desc.innerText = `距離電廠中心 ${distInt} 公尺 (OK)`;
+          box.className = "gps-box gps-status-ok"; iconDiv.innerHTML = "✅";
+          title.innerText = "已進入打卡範圍"; desc.innerText = `距離 ${distInt}m (OK)`;
       } else {
-          // 範圍外：紅色樣式
-          box.className = "gps-box gps-status-err";
-          iconDiv.innerHTML = "🚫";
-          title.innerText = "尚未進入範圍";
-          desc.innerText = `目前距離 ${distInt} 公尺 (限制 ${MAX_DIST}m)`;
+          box.className = "gps-box gps-status-err"; iconDiv.innerHTML = "🚫";
+          title.innerText = "尚未進入範圍"; desc.innerText = `距離 ${distInt}m (限制 ${MAX_DIST}m)`;
       }
   }
 
-  // Haversine 公式 (計算地球兩點距離)
   function getDist(lat1, lon1, lat2, lon2) { 
-      var R = 6371000; // 地球半徑 (公尺)
-      var dLat = (lat2-lat1)*(Math.PI/180);
-      var dLon = (lon2-lon1)*(Math.PI/180); 
-      var a = Math.sin(dLat/2)*Math.sin(dLat/2) + 
-              Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2); 
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-      return R * c; 
+      var R = 6371000; var dLat = (lat2-lat1)*(Math.PI/180); var dLon = (lon2-lon1)*(Math.PI/180); 
+      var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2); 
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
   }
 
   async function doClock(type) {
     if (!userData.company) { alert("請先填寫資料"); return; }
-    // 雙重檢查
-    if (currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)，無法打卡！`); return; }
-    
+    if (currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
     try {
         await db.collection('cams_records').add({
             userId: currentUser.email, name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
@@ -306,7 +381,126 @@
     } catch (e) { alert("失敗: " + e.message); }
   }
 
-  // 其他頁面切換與功能維持原樣
+  // ★ 修改處：紀錄查詢增加日期篩選
+  async function loadHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = "<p style='text-align:center'>載入中...</p>";
+    
+    // 取得日期範圍
+    const sStr = document.getElementById('history-start').value;
+    const eStr = document.getElementById('history-end').value;
+    
+    // 轉換成 Date 物件 (開始日的 00:00:00 到 結束日的 23:59:59)
+    const startDate = new Date(sStr + "T00:00:00");
+    const endDate = new Date(eStr + "T23:59:59");
+
+    let html = "";
+    try {
+        // 1. 讀取打卡紀錄 (增加日期篩選)
+        // 注意：這需要複合索引 (userId + time)
+        const snap1 = await db.collection('cams_records')
+            .where('userId', '==', currentUser.email)
+            .where('time', '>=', startDate)
+            .where('time', '<=', endDate)
+            .orderBy('time', 'desc')
+            .limit(20)
+            .get();
+        
+        if(!snap1.empty) {
+            html += `<p style="color:#666;border-bottom:1px solid #ddd">打卡紀錄 (${sStr}~${eStr})</p>`;
+            snap1.forEach(doc => {
+                let d = doc.data();
+                let dateObj = d.time && d.time.toDate ? d.time.toDate() : new Date(d.time);
+                let t = dateObj.toLocaleString('zh-TW', {month:'numeric', day:'numeric', hour:'numeric', minute:'numeric'});
+                html += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
+                            <span>${d.type} <small style="color:#666">${t}</small></span>
+                            <span class="badge">${d.status}</span>
+                         </div>`;
+            });
+        } else {
+            html += `<p style="color:#999; text-align:center;">此區間無打卡紀錄</p>`;
+        }
+
+        // 2. 讀取申請紀錄 (增加日期篩選)
+        const snap2 = await db.collection('cams_applications')
+            .where('userId', '==', currentUser.email)
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+
+        if(!snap2.empty) {
+            html += `<p style="color:#666;border-bottom:1px solid #ddd;margin-top:15px;">申請紀錄 (${sStr}~${eStr})</p>`;
+            snap2.forEach(doc => {
+                let d = doc.data();
+                let s = d.status || {};
+                let statusText = "處理中";
+                if(s.client==='同意') statusText="✅ 核准";
+                else if(Object.values(s).includes('退回')) statusText="❌ 退回";
+                
+                html += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
+                            <span>${d.type} <br><small>${d.startDate.replace('T',' ')}</small></span>
+                            <span class="badge">${statusText}</span>
+                         </div>`;
+            });
+        }
+        
+        list.innerHTML = html || "<p style='text-align:center'>無紀錄</p>";
+
+    } catch (e) {
+        console.error("讀取紀錄失敗", e);
+        if(e.message.includes("index")) {
+            list.innerHTML = `<p style='color:red;text-align:center;font-size:13px;'>系統需要建立索引才能依日期查詢。<br><a href="${e.message.match(/https?:\/\/[^ ]+/)[0]}" target="_blank">點此建立索引(管理員)</a></p>`;
+        } else {
+            list.innerHTML = `<p style='color:red;text-align:center'>錯誤: ${e.message}</p>`;
+        }
+    }
+  }
+
+  async function submitApp(cat) {
+    if (!userData.company) { alert("請先填寫資料"); return; }
+    
+    let payload = {
+        userId: currentUser.email, name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
+        category: cat, createdAt: new Date(),
+        status: { agent: "待審核", leader: "待審核", boss: "待審核", client: "待審核" }
+    };
+    // 領班不需要領班審核
+    if(userData.role === '外包領班') payload.status.leader = "不需";
+
+    if(cat === 'leave') {
+        let agent = document.getElementById('agentSelect').value;
+        if(!agent) { alert("請選擇代理人"); return; }
+        
+        payload.type = document.getElementById('leaveType').value;
+        payload.agentName = agent;
+        payload.startDate = document.getElementById('l-start').value;
+        payload.endDate = document.getElementById('l-end').value;
+        
+        // 簡易計算天數 (僅供參考)
+        let s = new Date(payload.startDate), e = new Date(payload.endDate);
+        let diff = (e - s) / (1000 * 3600 * 24);
+        payload.duration = parseFloat(diff.toFixed(2));
+    } 
+    else if(cat === 'correction') {
+        let date = document.getElementById('fixDate').value;
+        let time = document.getElementById('fixTime').value;
+        if(!date || !time) { alert("請填寫完整"); return; }
+        payload.type = "補卡-" + document.getElementById('fixType').value;
+        payload.startDate = date + "T" + time;
+        payload.reason = document.getElementById('fixReason').value;
+        payload.status = { boss: "待審核", client: "待審核" }; // 補卡只需老闆和甲方
+    }
+
+    try {
+        await db.collection('cams_applications').add(payload);
+        alert("申請已送出"); 
+        if(cat==='correction') toggleFix();
+        loadHistory();
+    } catch(e) { alert("失敗:" + e.message); }
+  }
+
   function switchTab(t) {
     ['clock','leave','history','task'].forEach(id => {
         document.getElementById('tab-'+id).classList.add('hidden');
@@ -314,18 +508,32 @@
     });
     document.getElementById('tab-'+t).classList.remove('hidden');
     document.getElementById('tab-btn-'+t).classList.add('active');
-    
     if(t==='history') loadHistory();
     if(t==='task') loadTasks();
   }
 
-  async function loadColleagues() { /* ... */ }
-  async function submitApp(cat) { /* ... */ }
-  async function loadTasks() { /* ... */ }
-  async function loadHistory() { /* ... */ }
+  async function loadColleagues() {
+      if(!userData.company) return;
+      const sel = document.getElementById('agentSelect');
+      const snap = await db.collection('cams_users').where('company', '==', userData.company).get();
+      sel.innerHTML = "<option value=''>請選擇</option>";
+      snap.forEach(doc => {
+          let u = doc.data();
+          if(u.email !== currentUser.email) sel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+      });
+  }
+  
+  async function loadTasks() { /* 待辦邏輯維持原樣 */ }
   function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
   function toggleFix() { document.getElementById('fix-form').classList.toggle('hidden'); }
-  async function saveToFirebase() { /* ... */ }
+  
+  // 特休計算公式
+  function calculateLeave(dateStr) { 
+      if(!dateStr) return 0; 
+      let start=new Date(dateStr), now=new Date(), m=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()); 
+      if(m<6)return 0; if(m<12)return 3; if(m<24)return 7; if(m<36)return 10; if(m<60)return 14; if(m<120)return 15; 
+      return Math.min(30, 16+Math.floor((m-120)/12)); 
+  }
 </script>
 </body>
 </html>
