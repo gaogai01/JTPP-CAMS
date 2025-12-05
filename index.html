@@ -5,35 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>尖山電廠系統 (員工端)</title>
   <style>
-    /* 全域設定 */
+    /* --- 全域設定 --- */
     body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f4f7f6; margin: 0; color: #333; }
     .container { max-width: 480px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
     h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-weight: 800; }
     .hidden { display: none !important; }
     
-    /* 輸入框與按鈕 */
+    /* --- 輸入框與按鈕 --- */
     input, select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #fff; }
     label { font-weight: 600; display: block; margin-bottom: 6px; color: #555; font-size: 14px; }
     
     button { padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     button:active { transform: scale(0.98); }
 
-    /* 按鈕顏色 */
+    /* 按鈕顏色系統 */
     .btn-in { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
     .btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); }
     .btn-leave { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .btn-search { background: #64748b; margin-top: 0; } /* 查詢按鈕灰色系 */
+    .btn-search { background: #64748b; margin-top: 0; } 
     .btn-fix { background: #4b5563; }
     .btn-edit { background: #94a3b8; font-size: 12px; padding: 6px 12px; width: auto; margin-left: auto; border-radius: 20px; }
     
-    /* 使用者資訊卡 */
+    /* --- 使用者資訊卡 --- */
     #user-info { display: flex; align-items: center; background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
     #user-info img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .user-details { flex-grow: 1; }
     .user-name { font-weight: 800; font-size: 18px; color: #1e293b; }
     .user-meta { font-size: 13px; color: #64748b; margin-top: 2px; }
 
-    /* 選單 Tabs (漸層風格) */
+    /* --- 選單 Tabs --- */
     .tabs { 
         display: flex; margin-bottom: 20px; 
         background: white; border-radius: 12px; padding: 5px; 
@@ -43,9 +43,9 @@
         flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #64748b; 
         font-weight: bold; font-size: 14px; border-radius: 8px; transition: 0.3s;
     }
-    .tab.active { background: #3b82f6; color: white; shadow: 0 2px 5px rgba(59,130,246,0.3); }
+    .tab.active { background: #3b82f6; color: white; box-shadow: 0 2px 5px rgba(59,130,246,0.3); }
 
-    /* GPS 卡片 */
+    /* --- GPS 卡片 --- */
     .gps-box {
         text-align: center; padding: 20px; border-radius: 12px; background: #f8fafc;
         margin-bottom: 20px; border: 1px solid #e2e8f0; transition: all 0.3s ease;
@@ -57,11 +57,17 @@
     .gps-status-ok .gps-title { color: #15803d; }
     .gps-status-err { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
     .gps-status-err .gps-title { color: #b91c1c; }
-
-    /* ★★★ 紀錄查詢美化 (參考截圖) ★★★ */
-    .search-box {
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px;
+    
+    .pulse-container { height: 30px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .pulse-dot { width: 15px; height: 15px; background: #3b82f6; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
     }
+
+    /* --- 紀錄查詢美化 (Card Style) --- */
+    .search-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
     .date-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
     .date-row input { margin-bottom: 0; }
     
@@ -70,22 +76,24 @@
         margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s;
     }
-    .history-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .h-left { display: flex; flex-direction: column; }
     .h-type { font-weight: bold; font-size: 16px; color: #333; margin-bottom: 4px; }
     .h-time { font-size: 13px; color: #64748b; }
-    .h-badge { 
-        padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; 
-    }
-    .badge-normal { background: #f0fdf4; color: #166534; } /* 正常-綠 */
-    .badge-warn { background: #fef2f2; color: #b91c1c; }   /* 異常-紅 */
-    .badge-info { background: #eff6ff; color: #1e40af; }   /* 補卡-藍 */
+    .h-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .badge-normal { background: #f0fdf4; color: #166534; }
+    .badge-warn { background: #fef2f2; color: #b91c1c; }
+    .badge-info { background: #eff6ff; color: #1e40af; }
 
-    /* 餘額顯示 */
+    /* --- 餘額顯示區塊 --- */
     .balance-box {
         background: #fffbeb; color: #92400e; padding: 15px; border-radius: 10px; 
-        margin-bottom: 15px; border: 1px solid #fcd34d; display: flex; justify-content: space-between;
+        margin-bottom: 15px; border: 1px solid #fcd34d; display: none; /* 預設隱藏 */
+        justify-content: space-between; align-items: center;
     }
+    .balance-val { font-weight: bold; font-size: 18px; }
+
+    /* 時間計算提示 */
+    .calc-hint { text-align: right; font-size: 14px; color: #2563eb; margin-bottom: 10px; font-weight: bold; }
   </style>
   
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -121,11 +129,11 @@
         <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
         <p style="font-size:12px; color:red;">* 以下欄位請聯繫管理員修改</p>
         
-        <label>班別 (工時設定)</label>
+        <label>所屬群組 (影響下班時間)</label>
         <select id="workShift" disabled style="background:#eee;">
             <option value="">請選擇</option>
-            <option value="A">A班 (08:00~16:30, 休0.5hr)</option>
-            <option value="B">B班 (08:00~17:00, 休1.0hr)</option>
+            <option value="maintenance">維護行政群 (08:00~16:30, 休0.5h)</option>
+            <option value="cleaning">清潔群 (08:00~17:00, 休1.0h)</option>
         </select>
 
         <label>到職日</label><input type="date" id="onboardDate" disabled style="background:#eee;">
@@ -142,42 +150,53 @@
 
     <div id="tab-clock">
         <div id="gps-box" class="gps-box">
-            <div id="gps-icon">📡</div>
+            <div class="pulse-container" id="gps-loading"><div class="pulse-dot"></div></div>
+            <div id="gps-icon" class="gps-icon hidden"></div>
             <div class="gps-title" id="gps-title">定位中...</div>
-            <div class="gps-desc" id="gps-desc">請稍候</div>
+            <div class="gps-desc" id="gps-desc">請允許瀏覽器使用位置權限</div>
         </div>
 
-        <div class="btn-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="btn-grid">
             <button class="btn-in" onclick="doClock('上班')">上班打卡<br><small>08:00 (彈性15分)</small></button>
             <button class="btn-leave" onclick="doClock('外出')">外出/公務</button>
-            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>視班別計算</small></button>
+            <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>視群組計算</small></button>
             <button class="btn-leave" onclick="doClock('返回')">返回/銷假</button>
         </div>
         
         <button class="btn-fix" onclick="toggleFix()" style="margin-top:20px;">🛠️ 申請補刷卡 (忘記打卡)</button>
         <div id="fix-form" class="hidden" style="margin-top:10px; background:#f1f5f9; padding:15px; border-radius:10px;">
             <label>類型</label><select id="fixType"><option>上班</option><option>下班</option></select>
-            <label>日期時間</label><input type="datetime-local" id="fixDateTime">
+            <label>日期</label><input type="date" id="fixDate">
+            <label>時間</label><input type="time" id="fixTime">
             <label>事由</label><input type="text" id="fixReason">
             <button class="btn-fix" onclick="submitApp('correction')">送出申請</button>
         </div>
     </div>
 
     <div id="tab-leave" class="hidden">
-        <div class="balance-box" id="balance-box" style="display:none;">
-            <span>剩餘額度</span>
-            <span style="font-weight:bold; font-size:18px;" id="balance-val">0</span>
+        <div class="balance-box" id="balance-display-box">
+            <span id="balance-label">特休餘額</span>
+            <span>剩餘 <span class="balance-val" id="balance-val">0</span> 天</span>
         </div>
+        
         <label>假別</label>
         <select id="leaveType" onchange="updateBalanceDisplay()">
-            <option value="特休">特休</option><option value="補休">補休</option>
-            <option value="事假">事假</option><option value="病假">病假</option>
+            <option value="特休">特休</option>
+            <option value="補休">補休</option>
+            <option value="事假">事假</option>
+            <option value="病假">病假</option>
         </select>
+        
         <label>代理人</label><select id="agentSelect"></select>
-        <label>時間</label>
-        <div style="display:flex; gap:5px;">
-            <input type="datetime-local" id="l-start"><span>~</span><input type="datetime-local" id="l-end">
+        
+        <label>請假期間</label>
+        <div style="display:flex; gap:5px; align-items:center;">
+            <input type="datetime-local" id="l-start">
+            <span>至</span>
+            <input type="datetime-local" id="l-end">
         </div>
+        <div class="calc-hint" id="calc-result">合計：0 小時</div>
+
         <button class="btn-leave" onclick="submitApp('leave')">送出假單</button>
     </div>
 
@@ -192,7 +211,7 @@
             <button class="btn-search" onclick="loadHistory()">🔍 查詢紀錄</button>
         </div>
         
-        <h4 style="margin:10px 0; color:#64748b; font-size:14px;">打卡與申請紀錄</h4>
+        <h4 style="margin:10px 0; color:#64748b; font-size:14px;">近期打卡與申請</h4>
         <div id="history-list"></div>
     </div>
 
@@ -205,6 +224,7 @@
 </div>
 
 <script>
+  // Firebase 設定
   const firebaseConfig = {
     apiKey: "AIzaSyAQPANPPx5A3FtpISPcfX-kHPtG0PC6irA",
     authDomain: "jtpp-cams.firebaseapp.com",
@@ -219,16 +239,26 @@
   const db = firebase.firestore();
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // 電廠座標 (範例)
+  // 電廠座標
   const PLANT_LOCATION = { lat: 23.564675316036272, lng: 119.66034190357468 };
-  const MAX_DIST = 500; // 測試用，可改回 100
+  const MAX_DIST = 500; // 測試用寬鬆距離
   let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
+  
+  // 假別餘額暫存
   let leaveBalances = { annual: 0, comp: 0 };
 
-  // 定義班別規則
+  // ★ 群組與工時定義 (修正)
   const SHIFTS = {
-      "A": { start: "08:00", totalHrs: 8.5, label: "A班 (08:00-16:30)" }, // 8hr工時 + 0.5hr休
-      "B": { start: "08:00", totalHrs: 9.0, label: "B班 (08:00-17:00)" }  // 8hr工時 + 1.0hr休
+      "maintenance": { 
+          name: "維護行政群", 
+          totalHrs: 8.5, // 8工時+0.5休
+          desc: "08:00~16:30 (休0.5h)" 
+      }, 
+      "cleaning": { 
+          name: "清潔群", 
+          totalHrs: 9.0, // 8工時+1.0休
+          desc: "08:00~17:00 (休1.0h)" 
+      }
   };
 
   function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
@@ -239,24 +269,72 @@
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('main-section').classList.remove('hidden');
       document.getElementById('u-photo').src = user.photoURL;
-      initHistoryDates();
+      
+      initHistoryDates(); // 紀錄頁日期
+      initDefaultTimes(); // 請假與補卡日期
+      
       await loadUserData(user);
       startGPS();
     }
   });
 
+  // 初始化輸入框時間
+  function initDefaultTimes() {
+      const now = new Date();
+      // 格式化 YYYY-MM-DD
+      const ymd = now.toLocaleDateString('en-CA'); 
+      
+      // 1. 補卡預設：今天 08:00
+      document.getElementById('fixDate').value = ymd;
+      document.getElementById('fixTime').value = "08:00";
+
+      // 2. 請假預設：今天 08:00 ~ 16:30
+      document.getElementById('l-start').value = ymd + "T08:00";
+      document.getElementById('l-end').value = ymd + "T16:30";
+      calculateDuration(); // 觸發一次計算
+  }
+
+  // 計算請假時數
+  function calculateDuration() {
+      const sVal = document.getElementById('l-start').value;
+      const eVal = document.getElementById('l-end').value;
+      const resDiv = document.getElementById('calc-result');
+      
+      if(!sVal || !eVal) return;
+      
+      const start = new Date(sVal);
+      const end = new Date(eVal);
+      
+      if(end <= start) {
+          resDiv.innerText = "結束時間需晚於開始時間";
+          resDiv.style.color = "red";
+          return;
+      }
+
+      // 計算毫秒差 -> 轉小時
+      const diffMs = end - start;
+      const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1); // 小數點1位
+      
+      // 假設一天8小時工作
+      const diffDays = (diffHrs / 8).toFixed(1); 
+      
+      resDiv.innerHTML = `合計：${diffHrs} 小時 (約 ${diffDays} 天)`;
+      resDiv.style.color = "#2563eb";
+  }
+  // 綁定監聽
+  document.getElementById('l-start').addEventListener('change', calculateDuration);
+  document.getElementById('l-end').addEventListener('change', calculateDuration);
+
   function initHistoryDates() {
       const now = new Date();
-      const first = new Date(now.getFullYear(), now.getMonth(), 1); // 當月1號
-      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0); // 當月最後一天
-      const toYMD = d => d.toISOString().split('T')[0]; // 因為時區問題，建議手動格式化，這裡簡化
-      // 修正時區偏移導致的日期錯誤
-      const localYMD = (d) => {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1); 
+      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0); 
+      const toYMD = d => {
           const z = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
           return z.toISOString().split('T')[0];
       };
-      document.getElementById('history-start').value = localYMD(first);
-      document.getElementById('history-end').value = localYMD(last);
+      document.getElementById('history-start').value = toYMD(first);
+      document.getElementById('history-end').value = toYMD(last);
   }
 
   async function loadUserData(user) {
@@ -265,64 +343,88 @@
         userData = doc.data();
         updateUI(userData);
         
-        // 餘額計算 (略為簡化，需配合後台實際邏輯)
+        // 餘額計算
         if(userData.onboardDate) {
-            let total = calculateAnnual(userData.onboardDate);
-            leaveBalances.annual = total - (userData.leaveUsed || 0);
+            let totalAnnual = calculateAnnual(userData.onboardDate);
+            leaveBalances.annual = totalAnnual - (userData.leaveUsed || 0);
             leaveBalances.comp = (userData.compTotal || 0) - (userData.compUsed || 0);
+            updateBalanceDisplay(); // 更新介面
         }
         loadColleagues();
         loadTasks();
     } else {
-        // 新用戶預設
+        // 新用戶預設 (預設維護群)
         userData = { 
             name: user.displayName, email: user.email, role: "外包員工", 
-            workShift: "A", // 預設 A 班
+            workShift: "maintenance",
             createdAt: new Date().toISOString() 
         };
         await db.collection('cams_users').doc(user.email).set(userData);
         updateUI(userData);
-        toggleEditMode(); // 新人自動打開編輯
+        toggleEditMode();
     }
   }
 
   function updateUI(data) {
     document.getElementById('u-name').innerText = data.name;
-    document.getElementById('u-company-display').innerText = (data.company||"未設定") + (data.workShift ? ` / ${data.workShift}班` : "");
+    // 顯示群組名稱
+    const shiftName = SHIFTS[data.workShift] ? SHIFTS[data.workShift].name : "未設定";
+    document.getElementById('u-company-display').innerText = (data.company||"未設定") + ` / ${shiftName}`;
     
-    // 填入表單
     document.getElementById('dbName').value = data.name;
     document.getElementById('jobTitle').value = data.jobTitle || "";
     document.getElementById('company').value = data.company || "";
     document.getElementById('dept').value = data.dept || "";
     document.getElementById('onboardDate').value = data.onboardDate || "";
-    document.getElementById('workShift').value = data.workShift || "A";
+    document.getElementById('workShift').value = data.workShift || "maintenance";
   }
 
-  // ★★★ 核心邏輯：打卡判斷 ★★★
+  // 更新餘額顯示
+  function updateBalanceDisplay() {
+      const type = document.getElementById('leaveType').value;
+      const box = document.getElementById('balance-display-box');
+      const label = document.getElementById('balance-label');
+      const val = document.getElementById('balance-val');
+      
+      if (type === '特休') {
+          box.style.display = 'flex';
+          box.style.background = '#fffbeb';
+          box.style.color = '#92400e';
+          label.innerText = "特休餘額";
+          val.innerText = leaveBalances.annual;
+      } else if (type === '補休') {
+          box.style.display = 'flex';
+          box.style.background = '#eff6ff';
+          box.style.color = '#1e40af';
+          label.innerText = "補休餘額";
+          val.innerText = leaveBalances.comp;
+      } else {
+          box.style.display = 'none';
+      }
+  }
+
+  // ★ 打卡邏輯 (含彈性工時)
   async function doClock(type) {
     if (!userData.company) { alert("請先填寫個人資料"); return; }
     if (currentDist > MAX_DIST) { alert(`距離過遠 (${Math.round(currentDist)}m)`); return; }
 
     const now = new Date();
     let status = "正常";
-    const shift = SHIFTS[userData.workShift || "A"]; // 取得班別設定
+    // 預設維護群
+    const shiftKey = userData.workShift || "maintenance";
+    const shift = SHIFTS[shiftKey]; 
     
-    // 1. 上班打卡邏輯
     if (type === '上班') {
-        // 設定基準時間 08:15 (這裡簡單用字串比較，或用 Date 物件比較)
         const checkTime = new Date();
-        checkTime.setHours(8, 15, 0); // 今天 08:15:00
-
+        checkTime.setHours(8, 15, 0); 
         if (now > checkTime) {
             status = "遲到";
-            alert(`現在時間 ${now.getHours()}:${now.getMinutes()} 已超過 08:15，記為「遲到」。\n請記得補請假單。`);
+            alert(`已超過 08:15，記為「遲到」。請記得補單。`);
         }
     } 
-    // 2. 下班打卡邏輯 (計算彈性工時)
     else if (type === '下班') {
         try {
-            // 找出「今天」最早的一筆「上班」紀錄
+            // 找今天最早的上班卡
             const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
             const endOfDay = new Date(now); endOfDay.setHours(23,59,59,999);
             
@@ -331,46 +433,30 @@
                 .where('type', '==', '上班')
                 .where('time', '>=', startOfDay)
                 .where('time', '<=', endOfDay)
-                .orderBy('time', 'asc') // 最早的一筆
-                .limit(1)
-                .get();
+                .orderBy('time', 'asc').limit(1).get();
 
             if (snap.empty) {
-                if(!confirm("⚠️ 警告：系統找不到你今天的「上班」打卡紀錄。\n無法計算彈性下班時間，確定要打卡嗎？")) return;
+                if(!confirm("⚠️ 找不到今天的上班卡。確定要打卡嗎？")) return;
                 status = "異常(缺上班)";
             } else {
-                const workRecord = snap.docs[0].data();
-                const inTime = workRecord.time.toDate(); // 實際上落的時間
+                const inTime = snap.docs[0].data().time.toDate();
                 
-                // 計算「基準上班時間」 (取 08:00 與 實際上班時間 的較晚者，但不得晚於 08:15)
-                // 規則：08:15 前刷卡，都有彈性。超過 08:15 雖然算遲到，但工時仍需做滿。
-                
-                // 為了計算合法下班時間：
-                // 如果 07:50 刷 -> 視為 08:00 上班 -> 16:30/17:00 下班
-                // 如果 08:10 刷 -> 視為 08:10 上班 -> 16:40/17:10 下班
-                // 如果 08:20 刷 -> 視為 08:20 上班 -> 16:50/17:20 下班 (雖遲到但要做滿時數)
-                
+                // 計算基準上班時間 (最早08:00)
                 let baseInTime = new Date(inTime);
                 const limit0800 = new Date(inTime); limit0800.setHours(8,0,0,0);
-                
-                // 如果比 08:00 早，就算 08:00
                 if (inTime < limit0800) baseInTime = limit0800;
 
-                // 計算合法下班時間 = 上班時間 + 總工時 (含休)
-                // A班 +8.5hr, B班 +9.0hr
+                // 合法下班 = 上班 + 總工時 (含休)
+                // 維護群+8.5h, 清潔群+9.0h
                 const validOutTime = new Date(baseInTime.getTime() + shift.totalHrs * 60 * 60 * 1000);
                 
                 if (now < validOutTime) {
                     const diffMin = Math.ceil((validOutTime - now) / 60000);
-                    if(!confirm(`⚠️ 注意！根據你的上班時間 (${inTime.getHours()}:${String(inTime.getMinutes()).padStart(2,'0')})，\n你是 ${userData.workShift} 班，應工作滿 ${shift.totalHrs} 小時。\n\n合法下班時間為：${validOutTime.getHours()}:${String(validOutTime.getMinutes()).padStart(2,'0')}\n\n現在打卡將記為「早退」(${diffMin}分鐘)，確定嗎？`)) return;
+                    if(!confirm(`⚠️ 你是 ${shift.name}，應工作滿 ${shift.totalHrs} 小時。\n合法下班時間：${validOutTime.getHours()}:${String(validOutTime.getMinutes()).padStart(2,'0')}\n\n現在打卡將記為「早退」，確定嗎？`)) return;
                     status = "早退";
                 }
             }
-        } catch(e) {
-            console.error(e);
-            alert("讀取上班紀錄失敗，請確認網路或索引設定。");
-            return;
-        }
+        } catch(e) { console.error(e); }
     }
 
     try {
@@ -384,7 +470,7 @@
     } catch (e) { alert("失敗: " + e.message); }
   }
 
-  // ★★★ 查詢美化版 ★★★
+  // ★ 查詢美化版
   async function loadHistory() {
     const list = document.getElementById('history-list');
     list.innerHTML = "<p style='text-align:center; color:#888;'>載入資料中...</p>";
@@ -396,8 +482,6 @@
 
     try {
         let html = "";
-        
-        // 查詢打卡
         const snap = await db.collection('cams_records')
             .where('userId', '==', currentUser.email)
             .where('time', '>=', startD).where('time', '<=', endD)
@@ -409,15 +493,13 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 const t = d.time.toDate();
-                const dateStr = `${t.getMonth()+1}/${t.getDate()}`; // 12/5
-                const timeStr = t.toLocaleTimeString('zh-TW', {hour12: true, hour:'numeric', minute:'numeric'}); // 下午 2:20
+                const dateStr = `${t.getMonth()+1}/${t.getDate()}`;
+                const timeStr = t.toLocaleTimeString('zh-TW', {hour12: true, hour:'numeric', minute:'numeric'});
                 
-                // 根據狀態給顏色
                 let badgeClass = "badge-normal";
                 if(d.status.includes("遲到") || d.status.includes("早退") || d.status.includes("異常")) badgeClass = "badge-warn";
                 if(d.status.includes("補卡")) badgeClass = "badge-info";
 
-                // 產生卡片 HTML (參考你的截圖 Layout)
                 html += `
                 <div class="history-card">
                     <div class="h-left">
@@ -429,29 +511,35 @@
         }
         list.innerHTML = html;
     } catch (e) {
-        console.error(e);
-        if(e.message.includes("index")) list.innerHTML = `<p style='color:red;text-align:center'>🔥 需要建立索引 (Index) 才能查詢。<br><a href="${e.message.match(/https?:\/\/[^ ]+/)[0]}" target="_blank">點此建立</a></p>`;
-        else list.innerHTML = `<p style='color:red;text-align:center'>查詢錯誤: ${e.message}</p>`;
+        if(e.message.includes("index")) list.innerHTML = `<p style='color:red;text-align:center'>🔥 需建立索引才可查詢 <a href="${e.message.match(/https?:\/\/[^ ]+/)[0]}" target="_blank">點此建立</a></p>`;
+        else list.innerHTML = `<p style='color:red;text-align:center'>錯誤: ${e.message}</p>`;
     }
   }
 
-  // GPS 邏輯
+  // GPS
   function startGPS() {
+      const iconDiv = document.getElementById('gps-icon');
+      const loadDiv = document.getElementById('gps-loading');
       if(navigator.geolocation) {
           navigator.geolocation.watchPosition(p => {
+              loadDiv.classList.add('hidden'); iconDiv.classList.remove('hidden');
               currentLat = p.coords.latitude; currentLng = p.coords.longitude;
               currentDist = getDist(currentLat, currentLng, PLANT_LOCATION.lat, PLANT_LOCATION.lng);
               const box = document.getElementById('gps-box');
               if(currentDist <= MAX_DIST) {
-                  box.className = "gps-box gps-status-ok";
+                  box.className = "gps-box gps-status-ok"; iconDiv.innerHTML = "✅";
                   document.getElementById('gps-title').innerText = "已進入打卡範圍";
-                  document.getElementById('gps-desc').innerText = `距離 ${Math.round(currentDist)} 公尺 (OK)`;
+                  document.getElementById('gps-desc').innerText = `距離 ${Math.round(currentDist)}m (OK)`;
               } else {
-                  box.className = "gps-box gps-status-err";
+                  box.className = "gps-box gps-status-err"; iconDiv.innerHTML = "🚫";
                   document.getElementById('gps-title').innerText = "尚未進入範圍";
-                  document.getElementById('gps-desc').innerText = `距離 ${Math.round(currentDist)} 公尺`;
+                  document.getElementById('gps-desc').innerText = `距離 ${Math.round(currentDist)}m`;
               }
-          }, e => console.log(e), {enableHighAccuracy:true});
+          }, e => {
+              loadDiv.classList.add('hidden'); iconDiv.classList.remove('hidden'); iconDiv.innerHTML = "⚠️";
+              document.getElementById('gps-title').innerText = "定位失敗";
+              document.getElementById('gps-desc').innerText = "請檢查手機定位權限";
+          }, {enableHighAccuracy:true});
       }
   }
   function getDist(lat1, lon1, lat2, lon2) {
@@ -463,35 +551,59 @@
   // 儲存資料
   async function saveToFirebase() {
       try {
-          // 因為班別和到職日是被 disabled 的，直接存可能會抓不到值，或是我們要允許「第一次設定」
-          // 這裡簡單處理：如果是 Employee 權限，理論上不能改這兩個。
-          // 但為了讓你測試，我們假設這裡還是會讀取 input 的值 (即使是 disabled，透過 JS 讀取沒問題，只要原本有值)
-          
           const newData = {
               name: document.getElementById('dbName').value,
               jobTitle: document.getElementById('jobTitle').value,
               company: document.getElementById('company').value,
               dept: document.getElementById('dept').value,
-              // 如果是 disabled，使用者無法改，但如果是空的 (新人)，我們在 toggleEditMode 可以暫時開啟
               onboardDate: document.getElementById('onboardDate').value,
               workShift: document.getElementById('workShift').value
           };
-          
           await db.collection('cams_users').doc(currentUser.email).set(newData, {merge:true});
           alert("資料更新成功！"); location.reload();
       } catch(e) { alert("儲存失敗: "+e.message); }
   }
 
+  // 補卡申請
+  async function submitApp(cat) {
+    if(cat === 'leave') {
+        const s = document.getElementById('l-start').value;
+        const e = document.getElementById('l-end').value;
+        const agent = document.getElementById('agentSelect').value;
+        if(!agent || !s || !e) { alert("請完整填寫"); return; }
+        
+        await db.collection('cams_applications').add({
+            userId: currentUser.email, name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
+            category: 'leave', type: document.getElementById('leaveType').value,
+            startDate: s, endDate: e, agentName: agent, createdAt: new Date(),
+            status: { agent: "待審核", leader: "待審核", boss: "待審核", client: "待審核" }
+        });
+        alert("假單已送出"); loadHistory();
+    }
+    if(cat === 'correction') {
+        const d = document.getElementById('fixDate').value;
+        const t = document.getElementById('fixTime').value;
+        const r = document.getElementById('fixReason').value;
+        if(!d || !t || !r) { alert("請完整填寫"); return; }
+
+        await db.collection('cams_applications').add({
+            userId: currentUser.email, name: userData.name, email: currentUser.email, company: userData.company, dept: userData.dept,
+            category: 'correction', type: "補卡-"+document.getElementById('fixType').value,
+            startDate: d+"T"+t, reason: r, createdAt: new Date(),
+            status: { boss: "待審核", client: "待審核" }
+        });
+        alert("補卡申請已送出"); toggleFix(); loadHistory();
+    }
+  }
+
   function toggleEditMode() { 
-      const form = document.getElementById('meta-form');
-      form.classList.toggle('hidden'); 
-      // 這裡做一個小技巧：如果還沒有設定過班別(是空的)，就暫時允許編輯，否則鎖定
+      document.getElementById('meta-form').classList.toggle('hidden'); 
       const shiftSelect = document.getElementById('workShift');
       const dateInput = document.getElementById('onboardDate');
-      
       if(!shiftSelect.value) shiftSelect.disabled = false;
       if(!dateInput.value) dateInput.disabled = false;
   }
+  function toggleFix() { document.getElementById('fix-form').classList.toggle('hidden'); }
   
   function switchTab(t) {
     ['clock','leave','history','task'].forEach(id => {
@@ -504,13 +616,19 @@
     if(t==='task') loadTasks();
   }
 
-  // 輔助函式 (略)
-  function calculateAnnual(d) { return 7; /* 簡化 */ } 
-  function updateBalanceDisplay() { /* 略 */ }
-  async function submitApp(t) { /* 略 */ }
-  async function loadColleagues() { /* 略 */ }
-  async function loadTasks() { /* 略 */ }
-  function toggleFix() { document.getElementById('fix-form').classList.toggle('hidden'); }
+  // 輔助函式 (簡化版)
+  function calculateAnnual(d) { return 7; } // 範例值
+  async function loadColleagues() { /* 同事選單邏輯，維持原樣 */ 
+      if(!userData.company) return;
+      const sel = document.getElementById('agentSelect');
+      const snap = await db.collection('cams_users').where('company', '==', userData.company).get();
+      sel.innerHTML = "<option value=''>請選擇</option>";
+      snap.forEach(doc => {
+          let u = doc.data();
+          if(u.email !== currentUser.email) sel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+      });
+  }
+  async function loadTasks() { /* 待辦邏輯，維持原樣 */ }
 </script>
 </body>
 </html>
