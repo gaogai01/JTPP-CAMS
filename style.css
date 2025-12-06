@@ -52,3 +52,25 @@ button:active { transform: scale(0.98); }
 .search-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
 .date-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .date-row input { margin-bottom: 0; flex: 1; }
+
+/* 新增或確認這段存在 */
+.btn-approve { 
+    background: #10b981; /* 綠色 */
+    color: white; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold;
+}
+.btn-reject { 
+    background: #ef4444; /* 紅色 */
+    color: white; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold;
+}
+.btn-approve:hover { background: #059669; }
+.btn-reject:hover { background: #dc2626; }
