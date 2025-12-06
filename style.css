@@ -14,26 +14,26 @@ label { font-weight: 600; display: block; margin-bottom: 6px; color: #555; font-
 button { padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 button:active { transform: scale(0.98); }
 
-/* 按鈕色系 */
-.btn-in { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
-.btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.btn-leave { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.btn-search { background: #64748b; margin-top: 0; font-size: 14px; padding: 10px; } 
-.btn-fix { background: #4b5563; }
+/* 按鈕色系定義 */
+.btn-in { background: linear-gradient(135deg, #3b82f6, #2563eb); } /* 上班 - 藍色 */
+.btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); } /* 下班 - 紅色 */
+.btn-leave { background: linear-gradient(135deg, #f59e0b, #d97706); } /* 外出/請假 - 橘色 */
+.btn-search { background: #64748b; margin-top: 0; font-size: 14px; padding: 10px; } /* 查詢 - 灰色 */
+.btn-fix { background: #4b5563; } /* 補卡 - 深灰 */
 .btn-edit { background: #94a3b8; font-size: 12px; padding: 6px 12px; width: auto; margin-left: auto; border-radius: 20px; }
 
-/* Tabs */
+/* 主選單 Tabs */
 .tabs { display: flex; margin-bottom: 20px; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
 .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #64748b; font-weight: bold; font-size: 14px; border-radius: 8px; transition: 0.3s; }
 .tab.active { background: #3b82f6; color: white; box-shadow: 0 2px 5px rgba(59,130,246,0.3); }
 
-/* 餘額大數據看板 (新樣式) */
+/* 餘額大數據看板 (Grid 排版) */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: center; }
 .stat-card { background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; }
 .stat-num { display: block; font-size: 24px; font-weight: 800; color: #1a73e8; }
 .stat-label { font-size: 12px; color: #64748b; }
 
-/* 表格樣式 (刷卡紀錄用) */
+/* 歷史紀錄表格樣式 */
 .history-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
 .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
 .history-table th { color: #666; font-size: 12px; }
@@ -42,7 +42,7 @@ button:active { transform: scale(0.98); }
 .tag-green { background: #dcfce7; color: #166534; }
 .tag-red { background: #fee2e2; color: #991b1b; }
 
-/* 其他樣式維持不變 */
+/* 其他輔助樣式 */
 .sub-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
 .sub-tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; color: #666; background: #f1f5f9; font-size: 13px; border-radius: 6px; white-space: nowrap; }
 .sub-tab.active { background: #64748b; color: white; font-weight: bold; }
