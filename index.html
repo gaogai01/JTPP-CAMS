@@ -18,7 +18,6 @@
   
   <div id="login-section" class="hidden" style="text-align:center; padding: 40px 0;">
     <button class="btn-in" onclick="loginGoogle()">🔵 Google 登入</button>
-    <p id="test-mode-hint" class="hidden" style="color:red; margin-top:10px;">🚧 測試模式已啟用 (免登入)</p>
   </div>
 
   <div id="main-section" class="hidden">
@@ -38,13 +37,16 @@
         <label>職稱</label><input type="text" id="jobTitle">
         <label>承攬商公司</label><input type="text" id="company">
         <label>甲方部門</label><input type="text" id="dept">
+        
         <label>所屬群組 (影響下班時間)</label>
         <select id="workShift" disabled style="background:#eee;">
             <option value="normal">正常班 (08:00~16:30)</option>
             <option value="cleaning">清潔班 (08:00~17:00)</option>
         </select>
+        
         <label>底薪</label><input type="number" id="baseSalary" disabled style="background:#eee;" placeholder="未設定">
         <label>到職日</label><input type="date" id="onboardDate" disabled style="background:#eee;">
+        
         <button class="btn-in" onclick="saveToFirebase()">儲存變更</button>
     </div>
 
@@ -57,16 +59,20 @@
 
     <div id="tab-clock">
         <div id="gps-box" class="gps-box">
-            <div id="gps-icon" style="font-size:40px;">📡</div>
-            <div id="gps-title" style="font-weight:bold;">定位中...</div>
-            <div id="gps-desc">請稍候</div>
+            <div id="gps-loading" class="pulse-container"><div class="pulse-dot"></div></div>
+            <div id="gps-icon" class="hidden" style="font-size:40px;">📡</div>
+            <div id="gps-title" style="font-weight:bold; margin-top:10px;">定位中...</div>
+            <div id="gps-desc">請稍候，正在獲取您的位置</div>
+            <button onclick="startGPS()" style="margin-top:10px; font-size:12px; padding:5px 10px; width:auto; background:#64748b;">🔄 重新定位</button>
         </div>
+
         <div class="btn-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
             <button class="btn-in" onclick="doClock('上班')">上班打卡<br><small>08:00</small></button>
             <button class="btn-leave" onclick="doClock('外出')">外出/公務</button>
             <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>自動判斷</small></button>
             <button class="btn-leave" onclick="doClock('返回')">返回/銷假</button>
         </div>
+        
         <button class="btn-fix" onclick="toggleFix()" style="margin-top:20px;">🛠️ 申請補刷卡 (忘記打卡)</button>
         <div id="fix-form" class="hidden" style="margin-top:10px; background:#f1f5f9; padding:15px; border-radius:10px;">
             <label>類型</label><select id="fixType" onchange="updateFixTimeDefaults()"><option value="上班">上班</option><option value="下班">下班</option></select>
@@ -82,6 +88,7 @@
         <select id="leaveType" onchange="updateBalanceDisplay()">
             <option value="特休">特休</option><option value="補休">補休</option><option value="事假">事假</option><option value="病假">病假</option>
         </select>
+
         <div id="balance-panel" class="hidden">
             <div class="stats-grid">
                 <div class="stat-card"><span class="stat-num" id="bal-total">-</span><span class="stat-label">今年應休</span></div>
@@ -89,12 +96,15 @@
                 <div class="stat-card" style="border-color:#f59e0b; background:#fffbeb;"><span class="stat-num" id="bal-left" style="color:#d97706">-</span><span class="stat-label">剩餘天數</span></div>
             </div>
         </div>
-        <label>代理人</label><select id="agentSelect"></select>
+
+        <label>代理人 (請選擇同公司員工)</label>
+        <select id="agentSelect"><option value="">載入中...</option></select>
+        
         <div style="display:flex;gap:10px;align-items:center; margin-top:10px;">
             <div style="flex:1"><label>開始</label><input type="datetime-local" id="l-start"></div>
             <div style="flex:1"><label>結束</label><input type="datetime-local" id="l-end"></div>
         </div>
-        <div id="calc-result" style="text-align:right; font-weight:bold; color:#2563eb; margin-bottom:10px;">合計：0 小時</div>
+        <div id="calc-result" style="text-align:right; font-weight:bold; color:#2563eb; margin-bottom:10px;">合計：0 天 0 小時</div>
         <button class="btn-leave" onclick="submitApp('leave')">送出假單</button>
     </div>
 
