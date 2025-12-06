@@ -4,58 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>尖山電廠系統 (員工端)</title>
-  <style>
-    /* ... (保留原有 CSS，增加 Table 樣式) ... */
-    body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background: #f4f7f6; margin: 0; color: #333; }
-    .container { max-width: 480px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); min-height: 80vh; position: relative; }
-    h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-weight: 800; }
-    .hidden { display: none !important; }
-    #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99; display: flex; justify-content: center; align-items: center; border-radius: 16px; font-weight: bold; color: #666; }
-    input, select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #fff; }
-    label { font-weight: 600; display: block; margin-bottom: 6px; color: #555; font-size: 14px; }
-    button { padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; width: 100%; margin-top: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    button:active { transform: scale(0.98); }
-    
-    /* 按鈕色系 */
-    .btn-in { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
-    .btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    .btn-leave { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .btn-search { background: #64748b; margin-top: 0; font-size: 14px; padding: 10px; } 
-    .btn-fix { background: #4b5563; }
-    .btn-edit { background: #94a3b8; font-size: 12px; padding: 6px 12px; width: auto; margin-left: auto; border-radius: 20px; }
-
-    /* Tabs */
-    .tabs { display: flex; margin-bottom: 20px; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
-    .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #64748b; font-weight: bold; font-size: 14px; border-radius: 8px; transition: 0.3s; }
-    .tab.active { background: #3b82f6; color: white; box-shadow: 0 2px 5px rgba(59,130,246,0.3); }
-
-    /* 餘額大數據看板 (新樣式) */
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: center; }
-    .stat-card { background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; }
-    .stat-num { display: block; font-size: 24px; font-weight: 800; color: #1a73e8; }
-    .stat-label { font-size: 12px; color: #64748b; }
-
-    /* 表格樣式 (刷卡紀錄用) */
-    .history-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-    .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
-    .history-table th { color: #666; font-size: 12px; }
-    .history-table td { color: #333; }
-    .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
-    .tag-green { background: #dcfce7; color: #166534; }
-    .tag-red { background: #fee2e2; color: #991b1b; }
-    
-    /* 其他樣式維持不變 */
-    .sub-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
-    .sub-tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; color: #666; background: #f1f5f9; font-size: 13px; border-radius: 6px; white-space: nowrap; }
-    .sub-tab.active { background: #64748b; color: white; font-weight: bold; }
-    .gps-box { text-align: center; padding: 20px; border-radius: 12px; background: #f8fafc; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-    .gps-status-ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-    .gps-status-err { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-    .search-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-    .date-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-    .date-row input { margin-bottom: 0; flex: 1; }
-  </style>
   
+  <link rel="stylesheet" href="style.css">
+
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -72,6 +23,7 @@
   </div>
 
   <div id="main-section" class="hidden">
+    
     <div style="display:flex; align-items:center; background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:20px;">
       <img id="u-photo" src="" alt="" style="width:50px;height:50px;border-radius:50%;margin-right:15px;">
       <div style="flex-grow:1;">
@@ -120,6 +72,7 @@
             <button class="btn-out" onclick="doClock('下班')">下班打卡<br><small>自動判斷</small></button>
             <button class="btn-leave" onclick="doClock('返回')">返回/銷假</button>
         </div>
+        
         <button class="btn-fix" onclick="toggleFix()" style="margin-top:20px;">🛠️ 申請補刷卡 (忘記打卡)</button>
         <div id="fix-form" class="hidden" style="margin-top:10px; background:#f1f5f9; padding:15px; border-radius:10px;">
             <label>類型</label><select id="fixType" onchange="updateFixTimeDefaults()"><option value="上班">上班</option><option value="下班">下班</option></select>
@@ -175,230 +128,7 @@
   </div>
 </div>
 
-<script>
-  // Firebase
-  const firebaseConfig = { apiKey: "AIzaSyAQPANPPx5A3FtpISPcfX-kHPtG0PC6irA", authDomain: "jtpp-cams.firebaseapp.com", projectId: "jtpp-cams", storageBucket: "jtpp-cams.firebasestorage.app", messagingSenderId: "334286192470", appId: "1:334286192470:web:9080eb43436b3a3fdfe0f7" };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const provider = new firebase.auth.GoogleAuthProvider();
+<script src="app.js"></script>
 
-  const PLANT_LOCATION = { lat: 23.564675316036272, lng: 119.66034190357468 };
-  const MAX_DIST = 500;
-  let currentUser = null, userData = {}, currentLat = 0, currentLng = 0, currentDist = 9999;
-  let leaveData = { annual: {total:0, used:0}, comp: {total:0, used:0} };
-  let currentHistoryType = 'clock';
-
-  const SHIFTS = {
-      "normal": { name: "正常班", end: "16:30", breakDur: 0.5 },
-      "cleaning": { name: "清潔班", end: "17:00", breakDur: 1.0 }
-  };
-
-  function loginGoogle() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
-
-  auth.onAuthStateChanged(async (user) => {
-    document.getElementById('loading-screen').classList.add('hidden');
-    if (user) {
-      currentUser = user;
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('main-section').classList.remove('hidden');
-      document.getElementById('u-photo').src = user.photoURL;
-      
-      initTimes();
-      await loadUserData(user);
-      startGPS();
-    } else {
-      document.getElementById('login-section').classList.remove('hidden');
-      document.getElementById('main-section').classList.add('hidden');
-    }
-  });
-
-  function initTimes() {
-      const now = new Date();
-      const ymd = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-      // 紀錄查詢預設當月
-      const first = new Date(now.getFullYear(), now.getMonth(), 1); 
-      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      const toYMD = d => new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0];
-      document.getElementById('history-start').value = toYMD(first);
-      document.getElementById('history-end').value = toYMD(last);
-      // 請假預設
-      document.getElementById('l-start').value = ymd + "T08:00";
-      document.getElementById('l-end').value = ymd + "T16:30";
-      // 補卡預設
-      document.getElementById('fixDate').value = ymd;
-      updateFixTimeDefaults();
-  }
-
-  // ★ 智慧補卡時間預設
-  function updateFixTimeDefaults() {
-      const type = document.getElementById('fixType').value;
-      const shift = SHIFTS[userData.workShift || "normal"];
-      if(type === '上班') {
-          document.getElementById('fixTime').value = "08:00";
-      } else {
-          document.getElementById('fixTime').value = shift.end;
-      }
-  }
-
-  async function loadUserData(user) {
-    const doc = await db.collection('cams_users').doc(user.email).get();
-    if (doc.exists) {
-        userData = doc.data();
-        updateUI(userData);
-        // 計算餘額 (範例：特休7天，補休讀取資料庫)
-        leaveData.annual.total = 7; 
-        leaveData.annual.used = userData.leaveUsed || 0;
-        leaveData.comp.total = userData.compLeaveTotal || 0; // 累積的補休時數 (來自加班)
-        leaveData.comp.used = userData.compLeaveUsed || 0;
-        updateBalanceDisplay();
-        loadColleagues();
-        loadTasks();
-    } else {
-        userData = { name: user.displayName, email: user.email, role: "外包員工", workShift: "normal", createdAt: new Date().toISOString() };
-        await db.collection('cams_users').doc(user.email).set(userData);
-        updateUI(userData);
-        toggleEditMode();
-    }
-  }
-
-  function updateUI(d) {
-      document.getElementById('u-name').innerText = d.name;
-      const sName = SHIFTS[d.workShift]?SHIFTS[d.workShift].name:"正常班";
-      document.getElementById('u-company-display').innerText = `${d.company||""} / ${sName}`;
-      document.getElementById('dbName').value = d.name;
-      document.getElementById('dbPhone').value = d.phone||"";
-      document.getElementById('jobTitle').value = d.jobTitle||"";
-      document.getElementById('workShift').value = d.workShift||"normal";
-      document.getElementById('baseSalary').value = d.baseSalary||"";
-      document.getElementById('onboardDate').value = d.onboardDate||"";
-  }
-
-  function updateBalanceDisplay() {
-      const type = document.getElementById('leaveType').value;
-      const panel = document.getElementById('balance-panel');
-      
-      if(type === '特休' || type === '補休') {
-          panel.classList.remove('hidden');
-          let data = type==='特休' ? leaveData.annual : leaveData.comp;
-          let unit = type==='特休' ? '天' : '小時';
-          
-          document.getElementById('bal-total').innerText = data.total + " " + unit;
-          document.getElementById('bal-used').innerText = data.used + " " + unit;
-          let left = (data.total - data.used).toFixed(1);
-          document.getElementById('bal-left').innerText = left + " " + unit;
-      } else {
-          panel.classList.add('hidden');
-      }
-  }
-
-  // ★ 刷卡查詢表格化
-  async function loadCurrentHistory() {
-      const list = document.getElementById('history-list');
-      list.innerHTML = "<p style='text-align:center;color:#999'>載入中...</p>";
-      const sStr = document.getElementById('history-start').value;
-      const eStr = document.getElementById('history-end').value;
-      const startD = new Date(sStr+"T00:00:00"); const endD = new Date(eStr+"T23:59:59");
-      
-      let html = "";
-      if(currentHistoryType === 'clock') {
-          // 刷卡表格
-          const snap = await db.collection('cams_records').where('userId','==',currentUser.email)
-              .where('time','>=',startD).where('time','<=',endD).orderBy('time','desc').limit(50).get();
-          if(snap.empty) html = "<p style='text-align:center'>無紀錄</p>";
-          else {
-              html = `<table class="history-table"><thead><tr><th>日期</th><th>時間</th><th>類型</th><th>狀態</th></tr></thead><tbody>`;
-              snap.forEach(doc => {
-                  const d = doc.data(); const t = d.time.toDate();
-                  const dateStr = `${t.getMonth()+1}/${t.getDate()}`;
-                  const timeStr = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
-                  let cls = d.status.includes('異常')?'tag-red':'tag-green';
-                  html += `<tr><td>${dateStr}</td><td>${timeStr}</td><td>${d.type}</td><td><span class="tag ${cls}">${d.status}</span></td></tr>`;
-              });
-              html += `</tbody></table>`;
-          }
-      } else {
-          // 請假與加班表格
-          let cat = currentHistoryType==='leave'?'leave':'overtime';
-          const snap = await db.collection('cams_applications').where('userId','==',currentUser.email)
-              .where('category','==',cat).where('createdAt','>=',startD).where('createdAt','<=',endD).orderBy('createdAt','desc').get();
-          if(snap.empty) html = "<p style='text-align:center'>無紀錄</p>";
-          else {
-               html = `<table class="history-table"><thead><tr><th>日期</th><th>項目</th><th>進度</th></tr></thead><tbody>`;
-               snap.forEach(doc => {
-                   const d=doc.data();
-                   let st = "已核准";
-                   if(d.status.agent==='待審核') st="待代理人";
-                   else if(d.status.leader==='待審核') st="待領班";
-                   else if(d.status.boss==='待審核') st="待老闆";
-                   else if(d.status.client==='待審核') st="待甲方";
-                   if(cat==='overtime' && d.status.employee==='待確認') st="待您確認";
-                   
-                   let desc = d.type || d.reason;
-                   html += `<tr><td>${d.startDate.split('T')[0]}</td><td>${desc}</td><td><small>${st}</small></td></tr>`;
-               });
-               html += `</tbody></table>`;
-          }
-      }
-      list.innerHTML = html;
-  }
-  
-  function switchHistorySub(t) {
-      currentHistoryType = t;
-      document.querySelectorAll('.sub-tab').forEach(el=>el.classList.remove('active'));
-      document.getElementById('sub-'+t).classList.add('active');
-      loadCurrentHistory();
-  }
-
-  // 其他功能保留 (doClock, submitApp, loadColleagues, saveToFirebase...)
-  async function doClock(type) {
-     const now = new Date();
-     // 上下班邏輯 (省略細節以省篇幅)
-     try {
-         await db.collection('cams_records').add({userId:currentUser.email, name:userData.name, email:currentUser.email, company:userData.company, dept:userData.dept, type:type, time:now, lat:currentLat, lng:currentLng, status:"正常"});
-         alert("打卡成功"); switchTab('history');
-     } catch(e) { alert(e.message); }
-  }
-  
-  async function submitApp(cat) {
-      // 這裡要判斷：如果是「補休」請假，需要檢查餘額
-      if(cat === 'leave') {
-          if(document.getElementById('leaveType').value === '補休') {
-               // 簡易檢查 (實際應由後端或更嚴謹的前端計算)
-               // ...
-          }
-      }
-      // 送出邏輯...
-      alert("申請已送出"); switchTab('history');
-  }
-
-  async function saveToFirebase() {
-      const u = {
-          name: document.getElementById('dbName').value,
-          phone: document.getElementById('dbPhone').value, // 員工可存手機
-          // baseSalary 不可存
-      };
-      await db.collection('cams_users').doc(currentUser.email).set(u, {merge:true});
-      alert("資料已更新"); location.reload();
-  }
-
-  function toggleEditMode() { document.getElementById('meta-form').classList.toggle('hidden'); }
-  function toggleFix() { document.getElementById('fix-form').classList.toggle('hidden'); updateFixTimeDefaults(); }
-  function switchTab(t) { ['clock','leave','history','task'].forEach(id=>document.getElementById('tab-'+id).classList.add('hidden')); document.getElementById('tab-'+t).classList.remove('hidden'); if(t==='history')loadCurrentHistory(); if(t==='task')loadTasks(); }
-  
-  // GPS
-  function startGPS() {
-     if(navigator.geolocation) {
-         navigator.geolocation.watchPosition(p=>{
-             document.getElementById('gps-loading').classList.add('hidden');
-             document.getElementById('gps-icon').classList.remove('hidden');
-             currentLat=p.coords.latitude; currentLng=p.coords.longitude;
-             // 距離判斷省略...
-         });
-     }
-  }
-  async function loadColleagues() { /*...*/ }
-  async function loadTasks() { /*...*/ }
-</script>
 </body>
 </html>
